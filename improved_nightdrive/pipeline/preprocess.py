@@ -18,13 +18,15 @@ class Preprocess():
 
 
 class Normalization(Preprocess):
+    """Normalization preprocess
+    """
 
     def __init__(self):
         super().__init__(normalize)
 
 
 def normalize(inputs: tf.Tensor) -> tf.Tensor:
-    """Normalize a batch of inputs
+    """Normalizes a batch of inputs
 
     Args:
         inputs: A batch of inputs
@@ -32,7 +34,6 @@ def normalize(inputs: tf.Tensor) -> tf.Tensor:
     Returns:
         outputs: A batch of normalized inputs
     """
-
     means = tf.reduce_mean(inputs, inputs.shape[1:], keepdims=True)
     stds = tf.math.reduce_std(inputs, inputs.shape[1:], keepdims=True)
 
