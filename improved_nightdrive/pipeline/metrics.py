@@ -27,7 +27,7 @@ class MeanIOU(Metric):
 
 
 def m_iou(num_classes: int, labels: tf.Tensor, predictions: tf.Tensor) -> float:
-    """Compute the mean IOU for a batch
+    """Computes the mean IOU for a batch
 
     Args:
         num_classes: The number of classes

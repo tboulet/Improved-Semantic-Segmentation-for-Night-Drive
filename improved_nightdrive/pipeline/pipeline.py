@@ -1,7 +1,8 @@
+from typing import List, Optional, TYPE_CHECKING
 import tensorflow as tf
-from metrics import Metric
-from preprocess import Preprocess
-from typing import List
+
+if TYPE_CHECKING:
+    from improved_nightdrive.pipeline import Metric, Preprocess
 
 
 class Evaluation():
@@ -9,20 +10,20 @@ class Evaluation():
 
     Attributes:
         model: A trained keras model
-        preprocess: A list of preprocesses to apply IN ORDER
         metrics: A list of Metric instances
+        preprocesses: A list of preprocesses to apply IN ORDER
     """
 
     def __init__(self,
                  model: tf.keras.models.Model,
-                 preprocesses: List[Preprocess],
-                 metrics: List[Metric]) -> None:
+                 metrics: List['Metric'],
+                 preprocesses: Optional[List['Preprocess']] = None) -> None:
 
         self.model = model
-        self.preprocesses = preprocesses
         self.metrics = metrics
+        self.preprocesses = preprocesses
 
-    def evaluate(self, x, y):
+    def evaluate(self, x: tf.Tensor, y: tf.Tensor) -> List[float]:
         """Evaluate the model
 
         Args:
