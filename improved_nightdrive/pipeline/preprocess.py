@@ -50,9 +50,11 @@ class Crop(Preprocess):
     def __init__(self, shape: Tuple[int]):
 
         def crop(batch_image: tf.Tensor) -> tf.Tensor:
-
+            # def _crop(image: tf.Tensor):
             h, w, c = shape    
             return tf.image.resize_with_crop_or_pad(batch_image, h, w)
+            
+            # return tf.vectorized_map(_crop, batch_image)
 
         super().__init__(crop)
 

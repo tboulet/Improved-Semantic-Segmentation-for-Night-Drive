@@ -1,12 +1,20 @@
 
-from tkinter.tix import Tree
-from typing import Tuple, Optional
-
 import tensorflow as tf
-
+from tensorflow.keras import Input
 from tensorflow.keras.applications import MobileNetV2
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Conv2D, Conv2DTranspose, DepthwiseConv2D, ZeroPadding2D, Input
+from tensorflow.keras.layers import (
+    BatchNormalization,
+    Conv2D, 
+    Conv2DTranspose, 
+    DepthwiseConv2D,
+    Dropout,
+    LeakyReLU, 
+    UpSampling2D, 
+    ZeroPadding2D
+)
+from tensorflow_addons.layers import InstanceNormalization
+
 
 class Block1(Model):
 
@@ -336,7 +344,7 @@ class PreTrainedMobileUnetv2(Model):
         self.num_classes = num_classes
 
         self.encoder = MobileNetV2((224,224,3), include_top=False)
-        
+
         self.convt1 = Conv2DTranspose(576, (3,3), (2,2), padding='SAME')
         self.conv1 = Conv2D(576, (3,3), (1,1), padding='SAME')
 
@@ -381,5 +389,48 @@ class PreTrainedMobileUnetv2(Model):
 
         return up5
 
+
     def call(self, input_tensor, training=True):
         return self.__call__(input_tensor, training=True)
+
+
+def u_net_pretrained(num_classes):
+
+    encoder = MobileNetV2(
+        input_shape=(224,224,3), 
+        include_top=False,
+        weights='imagenet'
+    )
+    bridge_layers = [
+        'block_1_expand_relu',
+        'block_3_expand_relu',
+        'block_6_expand_relu', 
+        'block_13_expand_relu',
+        'block_16_project',
+    ]
+    encoder_outputs = [encoder.get_layer(layer).output for layer in bridge_layers]
+    down = Model(inputs=encoder.input, outputs=encoder_outputs)
+
+    input = Input(shape=(224,224,3))
+    bridges = down(input)
+    x = bridges[-1]
+    bridges = reversed(bridges[:-1])
+
+    filters_up = [512, 256, 128, 64]
+    i = 0
+    for bridge in bridges:
+        x = UpSampling2D()(x)
+        x = Conv2D(filters_up[i], 3, padding="SAME")(x)
+        x = InstanceNormalization()(x)
+        # x = BatchNormalization()(x)
+        x = LeakyReLU(0.2)(x)
+        x = Dropout(0.5)(x)
+        b = Conv2D(filters_up[i], 1, padding="SAME")(bridge)
+        x = tf.concat([b, x], axis=-1)
+        i += 1
+    x = UpSampling2D()(x)
+    x = Conv2D(num_classes, 1, activation="softmax")(x)
+    # print(x)
+
+    return Model(input, x)
+
