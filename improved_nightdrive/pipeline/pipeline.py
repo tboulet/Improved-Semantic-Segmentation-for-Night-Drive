@@ -104,8 +104,8 @@ class Training():
             xs = []
             ys = []
             for i in idx:
-                ix = Image.open("./dataset/rgb/"+x_dir[i])
-                iy = Image.open("./dataset/seg/"+y_dir[i])
+                ix = Image.open(x_dir_path+x_dir[i])
+                iy = Image.open(y_dir_path+y_dir[i])
                 xs.append(np.array(ix))
                 ys.append(np.array(iy))
             x = tf.constant(np.array(xs), dtype=tf.float32)
@@ -115,7 +115,7 @@ class Training():
 
         num_classes = 12
         batch_size = batch_size
-        num_elem = len(os.listdir("./dataset/rgb/"))
+        num_elem = len(os.listdir(x_dir_path))
 
         pre = Crop(shape=(224,224,3))
         mo = self.model
@@ -135,7 +135,7 @@ class Training():
             # Train 
             random.shuffle(train_idx)
             num_batch = len(train_idx) // batch_size
-            for i in range(num_batch):
+            for i in tqdm(range(num_batch), desc="inner loop"):
                 idx_batch = train_idx[i*batch_size: (i+1)*batch_size]
                 xbatch, ybatch = load_batch(idx_batch)
                 xbatch = pre.func(xbatch)
