@@ -1,10 +1,12 @@
 
 import tensorflow as tf
 from tensorflow.keras import Input
-from tensorflow.keras.applications import MobileNetV2
+from tensorflow.keras.applications import MobileNetV2, ResNet50
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import (
+    AveragePooling2D,
     BatchNormalization,
+    Concatenate,
     Conv2D, 
     Conv2DTranspose, 
     DepthwiseConv2D,
@@ -13,328 +15,11 @@ from tensorflow.keras.layers import (
     UpSampling2D, 
     ZeroPadding2D
 )
+from tensorflow.keras.initializers import HeNormal
 from tensorflow_addons.layers import InstanceNormalization
 
 
-class Block1(Model):
-
-    def __init__(
-        self, 
-        input_channels: int = 16,
-        output_channels: int = 16,
-        expansion_factor: int = 6,
-        use_batch_norm: bool = False,
-    ) -> None:
-        super().__init__()
-
-        self.input_channels = input_channels
-        self.output_channels = output_channels
-        self.expansion_factor = expansion_factor
-
-        self.use_batch_norm = use_batch_norm
-
-        mid_channels = self.input_channels * self.expansion_factor 
-        self.conv1 = Conv2D(mid_channels, (1,1), (1,1), padding='SAME')
-        self.dconv1 = DepthwiseConv2D((3,3), (1,1), padding='SAME')
-        self.conv2 = Conv2D(output_channels, (1,1), (1,1), padding='SAME')
-        self.conv3 = Conv2D(output_channels, (1,1), (1,1), padding='SAME')
-
-    def __call__(self, input_tensor: tf.Tensor, training=True) -> tf.Tensor:
-       
-        m = self.conv1(input_tensor)
-        if self.use_batch_norm:
-            m = tf.nn.batch_normalization(m)
-        m = tf.nn.relu6(m)
-        m = self.dconv1(m)
-        if self.use_batch_norm:
-            m = tf.nn.batch_normalization(m)
-        m = tf.nn.relu6(m)
-        m = self.conv2 (m)
-        n = self.conv3(input_tensor)
-        if self.use_batch_norm:
-            m = tf.nn.batch_normalization(m)
-            n = tf.nn.batch_normalization(n)
-
-        return m + n
-
-class Block2(Model):
-
-    def __init__(
-        self, 
-        input_channels: int = 16,
-        output_channels: int = 16,
-        expansion_factor: int = 6,
-        use_batch_norm: bool = False,
-    ) -> None:
-        super().__init__()
-
-        self.input_channels = input_channels
-        self.output_channels = output_channels
-        self.expansion_factor = expansion_factor
-
-        self.use_batch_norm = use_batch_norm
-
-        mid_channels = self.input_channels * self.expansion_factor 
-        self.conv1 = Conv2D(mid_channels, (1,1), (1,1), padding='SAME')
-        self.dconv1 = DepthwiseConv2D((3,3), (2,2), padding='VALID')
-        self.conv2 = Conv2D(output_channels, (1,1), (1,1), padding='SAME')
-    
-    def __call__(self, input_tensor: tf.Tensor, training=True) -> tf.Tensor:
-
-        m = self.conv1(input_tensor)
-        if self.use_batch_norm:
-            m = tf.nn.batch_normalization(m)
-        m = tf.nn.relu6(m)
-        m = self.dconv1(m)
-        if self.use_batch_norm:
-            m = tf.nn.batch_normalization(m)
-        m = tf.nn.relu6(m)
-        m = self.conv2(m)
-        if self.use_batch_norm:
-            m = tf.nn.batch_normalization(m)
-
-        return m
-
-class MobileUNET_XS(Model):
-
-    def __init__(
-        self, 
-        num_classes: int = 10,
-        use_batch_norm: bool = False
-    ) -> None:
-        super().__init__()
-        
-        self.num_classes = num_classes
-
-        self.use_batch_norm = use_batch_norm
-    
-    def __call__(self, input_tensor: tf.Tensor) -> tf.Tensor:
-
-        ubn = self.use_batch_norm
-        
-        ### First Convolution ##
-        m = Conv2D(32, (3,3), (2,2), padding='SAME')(input_tensor)
-
-        ### Encoder ###
-        m1 = Block1(16, 1, ubn)(m)
-
-        m2 = Block2(24, 6, ubn)(m1)
-        m2 = Block1(24, 6, ubn)(m2)
-
-        m3 = Block2(32, 6, ubn)(m2)
-        m3 = Block1(32, 6, ubn)(m3)
-
-        m4 = Block2(64, 6, ubn)(m3)
-        m4 = Block1(64, 6, ubn)(m4)
-
-        m5 = Block2(64, 6, ubn)(m4)
-        m5 = Block1(64, 6, ubn)(m5)
-
-        m6 = Block2(32, 6, ubn)(m5)
-        m6 = Block1(32, 6, ubn)(m6)
-
-        ### Decoder ###
-        m7 = Conv2DTranspose(64, (3,3), (2,2), padding='SAME')(m6)
-        if ubn:
-            m7 = tf.nn.batch_normalization(m7)
-        m7 = tf.nn.relu6(m7)
-        if m5.shape != m7.shape:
-            m7 = tf.image.resize_with_crop_or_pad(m7, m5.shape[1], m5.shape[2])
-        m7 = tf.concat([m5, m7], axis=-1)
-
-        m8 = Conv2DTranspose(64, (3,3), (2,2), padding='SAME')(m7)
-        if ubn:
-            m8 = tf.nn.batch_normalization(m8)
-        m8 = tf.nn.relu6(m8)
-        if m4.shape != m8.shape:
-            m8 = tf.image.resize_with_crop_or_pad(m8, m4.shape[1], m4.shape[2])
-        m8 = tf.concat([m4, m8], axis=-1)
-
-        m9 = Conv2DTranspose(32, (3,3), (2,2), padding='SAME')(m8)
-        if ubn:
-            m9 = tf.nn.batch_normalization(m9)
-        m9 = tf.nn.relu6(m9)
-        if m3.shape != m9.shape:
-            m9 = tf.image.resize_with_crop_or_pad(m9, m3.shape[1], m3.shape[2])
-        m9 = tf.concat([m3, m9], axis=-1)
-
-        m10 = Conv2DTranspose(24, (3,3), (2,2), padding='SAME')(m9)
-        if ubn:
-            m10 = tf.nn.batch_normalization(m10)
-        m10 = tf.nn.relu(m10)
-        if m2.shape != m10.shape:
-            m10 = tf.image.resize_with_crop_or_pad(m10, m2.shape[1], m2.shape[2])
-        m10 = tf.concat([m2, m10], axis=-1)
-
-        m11 = Conv2DTranspose(16, (3,3), (2,2), padding='SAME')(m10)
-        if ubn:
-            m11 = tf.nn.batch_normalization(m11)
-        m11 = tf.nn.relu6(m11)
-        if m1.shape != m11.shape:
-            m11 = tf.image.resize_with_crop_or_pad(m11, m1.shape[1], m1.shape[2])
-        m11 = tf.concat([m1, m11], axis=-1)
-
-        m12 = Conv2DTranspose(self.num_classes, (3,3), (2,2), padding='SAME')(m11)
-
-        return m12
-
-class MobileUNET_S(Model):
-
-    def __init__(
-        self, 
-        num_classes: int = 10,
-        use_batch_norm: bool = False
-    ) -> None:
-        super().__init__()
-        
-        self.num_classes = num_classes
-
-        self.use_batch_norm = ubn = use_batch_norm
-
-        self.conv1 = Conv2D(32, (3,3), (1,1), padding='SAME')
-        self.conv2 = Conv2D(32, (3,3), (2,2), padding='SAME')
-
-        self.block1_1 = Block1(32, 16, 1, ubn)
-
-        self.block2_1 = Block2(16, 24, 6, ubn)
-        self.block2_2 = Block1(24, 24, 6, ubn)
-        self.block2_3 = Block1(24, 24, 6, ubn)
-
-        self.block3_1 = Block2(24, 32, 6, ubn)
-        self.block3_2 = Block1(32, 32, 6, ubn)
-        self.block3_3 = Block1(32, 32, 6, ubn)
-
-        self.block4_1 = Block2(32, 64, 6, ubn)
-        self.block4_2 = Block1(64, 64, 6, ubn)
-        self.block4_3 = Block1(64, 64, 6, ubn)
-
-        self.block5_1 = Block2(64, 128, 6, ubn)
-        self.block5_2 = Block1(128, 128, 6, ubn)
-        self.block5_3 = Block1(128, 128, 6, ubn)
-
-        self.block6_1 = Block2(128, 256, 6, ubn)
-        self.block6_2 = Block1(256, 256, 6, ubn)
-        self.block6_3 = Block1(256, 256, 6, ubn)
-
-        self.convt1 = Conv2DTranspose(128, (3,3), (2,2), padding='SAME')
-        self.conv3 = Conv2D(128, (3,3), (1,1), padding='SAME')
-
-        self.convt2 = Conv2DTranspose(64, (3,3), (2,2), padding='SAME')
-        self.conv4 = Conv2D(64, (3,3), (1,1), padding='SAME')
-
-        self.convt3 = Conv2DTranspose(32, (3,3), (2,2), padding='SAME')
-        self.conv5 = Conv2D(32, (3,3), (1,1), padding='SAME')
-
-        self.convt4 = Conv2DTranspose(24, (3,3), (2,2), padding='SAME')
-        self.conv6 = Conv2D(24, (3,3), (1,1), padding='SAME')
-
-        self.convt5 = Conv2DTranspose(16, (3,3), (2,2), padding='SAME')
-        self.conv7 = Conv2D(16, (3,3), (1,1), padding='SAME')
-
-        self.convt6 = Conv2DTranspose(32, (3,3), (2,2), padding='SAME')
-        self.conv8 = Conv2D(self.num_classes, (3,3), (1,1), padding='SAME', kernel_initializer=tf.keras.initializers.Zeros())
-    
-    def __call__(self, input_tensor: tf.Tensor, training=True) -> tf.Tensor:
-
-        ubn = self.use_batch_norm
-        
-        ### First Convolution ##
-        m0 = self.conv1(input_tensor)
-        m = self.conv2(m0)
-
-        ### Encoder ###
-        m1 = self.block1_1(m)
-
-        m2 = self.block2_1(m1)
-        m2 = self.block2_2(m2)
-        m2 = self.block2_3(m2)
-
-        m3 = self.block3_1(m2)
-        m3 = self.block3_2(m3)
-        m3 = self.block3_3(m3)
-
-        m4 = self.block4_1(m3)
-        m4 = self.block4_2(m4)
-        m4 = self.block4_3(m4)
-
-        m5 = self.block5_1(m4)
-        m5 = self.block5_2(m5)
-        m5 = self.block5_3(m5)
-
-        m6 = self.block6_1(m5)
-        m6 = self.block6_2(m6)
-        m6 = self.block6_3(m6)
-
-        ### Decoder ###
-        m7 = self.convt1(m6)
-        if ubn:
-            m7 = tf.nn.batch_normalization(m7)
-        m7 = tf.nn.relu6(m7)
-        if m5.shape != m7.shape:
-            m7 = ZeroPadding2D()(m7)
-            # m5 = m5[:,:-1,:-1,:]
-            pass
-        # print(m5.shape, m7.shape)
-        m7 = tf.concat([m5, m7], axis=-1)
-        m7 = self.conv3(m7)
-
-        m8 = self.convt2(m7)
-        if ubn:
-            m8 = tf.nn.batch_normalization(m8)
-        m8 = tf.nn.relu6(m8)
-        if m4.shape != m8.shape:
-            m8 = ZeroPadding2D()(m8)
-            m8 = m8[:,:-1,:-1,:]
-            pass
-        # print(m4.shape, m8.shape)
-        m8 = tf.concat([m4, m8], axis=-1)
-        m8 = self.conv4(m8)
-
-        m9 = self.convt3(m8)
-        if ubn:
-            m9 = tf.nn.batch_normalization(m9)
-        m9 = tf.nn.relu6(m9)
-        if m3.shape != m9.shape:
-            m9 = ZeroPadding2D()(m9)
-            m9 = m9[:,:-1,:-1,:]
-            pass
-        # print(m3.shape, m9.shape)
-        m9 = tf.concat([m3, m9], axis=-1)
-        m9 = self.conv5(m9)
-
-        m10 = self.convt4(m9)
-        if ubn:
-            m10 = tf.nn.batch_normalization(m10)
-        m10 = tf.nn.relu(m10)
-        if m2.shape != m10.shape:
-            m10 = ZeroPadding2D()(m10)
-            m10 = m10[:,:-1,:-1,:]
-            pass
-        # print(m2.shape, m10.shape)
-        m10 = tf.concat([m2, m10], axis=-1)
-        m10 = self.conv6(m10)
-        m10 = tf.nn.relu6(m10)
-
-        m11 = self.convt5(m10)
-        if ubn:
-            m11 = tf.nn.batch_normalization(m11)
-        m11 = tf.nn.relu6(m11)
-        if m1.shape != m11.shape:
-            m11 = ZeroPadding2D()(m11)
-            # m1 = m1[:,:-1,:-1,:]
-            pass
-        # print(m1.shape, m11.shape)
-        m11 = tf.concat([m1, m11], axis=-1)
-        m11 = self.conv7(m11)
-        m11 = tf.nn.relu6(m11)
-
-        m12 = self.convt6(m11)
-        m12 = tf.nn.relu6(m12)
-        # print(m0.shape, m12.shape)
-        m12 = tf.concat([m0, m12], axis=-1)
-        m12 = self.conv8(m12)
-        
-        return tf.nn.softmax(m12, axis=-1)
+### Mobilenet V2 ###
 
 class PreTrainedMobileUnetv2(Model):
 
@@ -394,7 +79,7 @@ class PreTrainedMobileUnetv2(Model):
         return self.__call__(input_tensor, training=True)
 
 
-def u_net_pretrained(num_classes):
+def u_net_pretrained(num_classes) -> Model:
 
     encoder = MobileNetV2(
         input_shape=(224,224,3), 
@@ -422,7 +107,6 @@ def u_net_pretrained(num_classes):
         x = UpSampling2D()(x)
         x = Conv2D(filters_up[i], 3, padding="SAME")(x)
         x = InstanceNormalization()(x)
-        # x = BatchNormalization()(x)
         x = LeakyReLU(0.2)(x)
         x = Dropout(0.5)(x)
         b = Conv2D(filters_up[i], 1, padding="SAME")(bridge)
@@ -430,7 +114,71 @@ def u_net_pretrained(num_classes):
         i += 1
     x = UpSampling2D()(x)
     x = Conv2D(num_classes, 1, activation="softmax")(x)
-    # print(x)
 
     return Model(input, x)
 
+
+### DeepLabv3 ###
+
+def convolution_block(
+    block_input,
+    num_filters=256,
+    kernel_size=3,
+    dilation_rate=1,
+    padding="same",
+    use_bias=False,
+):
+    x = Conv2D(
+        num_filters,
+        kernel_size=kernel_size,
+        dilation_rate=dilation_rate,
+        padding=padding,
+        use_bias=use_bias,
+        kernel_initializer=HeNormal(),
+    )(block_input)
+    x = BatchNormalization()(x)
+    return tf.nn.relu(x)
+
+
+def DilatedSpatialPyramidPooling(dspp_input):
+    dims = dspp_input.shape
+    x = AveragePooling2D(pool_size=(dims[-3], dims[-2]))(dspp_input)
+    x = convolution_block(x, kernel_size=1, use_bias=True)
+    out_pool = UpSampling2D(
+        size=(dims[-3] // x.shape[1], dims[-2] // x.shape[2]), interpolation="bilinear",
+    )(x)
+
+    out_1 = convolution_block(dspp_input, kernel_size=1, dilation_rate=1)
+    out_6 = convolution_block(dspp_input, kernel_size=3, dilation_rate=6)
+    out_12 = convolution_block(dspp_input, kernel_size=3, dilation_rate=12)
+    out_18 = convolution_block(dspp_input, kernel_size=3, dilation_rate=18)
+
+    x = Concatenate(axis=-1)([out_pool, out_1, out_6, out_12, out_18])
+    output = convolution_block(x, kernel_size=1)
+    return output
+
+
+def DeeplabV3Plus(image_size, num_classes) -> Model:
+    model_input = Input(shape=(image_size, image_size, 3))
+    resnet50 = ResNet50(
+        weights="imagenet", include_top=False, input_tensor=model_input
+    )
+    x = resnet50.get_layer("conv4_block6_2_relu").output
+    x = DilatedSpatialPyramidPooling(x)
+
+    input_a = UpSampling2D(
+        size=(image_size // 4 // x.shape[1], image_size // 4 // x.shape[2]),
+        interpolation="bilinear",
+    )(x)
+    input_b = resnet50.get_layer("conv2_block3_2_relu").output
+    input_b = convolution_block(input_b, num_filters=48, kernel_size=1)
+
+    x = Concatenate(axis=-1)([input_a, input_b])
+    x = convolution_block(x)
+    x = convolution_block(x)
+    x = UpSampling2D(
+        size=(image_size // x.shape[1], image_size // x.shape[2]),
+        interpolation="bilinear",
+    )(x)
+    model_output = Conv2D(num_classes, kernel_size=(1, 1), padding="same")(x)
+    return Model(inputs=model_input, outputs=model_output)
