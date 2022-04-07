@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 if TYPE_CHECKING:
     from improved_nightdrive.pipeline.callback import Callback
-    from improved_nightdrive.pipeline.metrics import Metric
+    from improved_nightdrive.pipeline.metric import Metric
     from improved_nightdrive.pipeline.preprocess import Preprocess
 
 
