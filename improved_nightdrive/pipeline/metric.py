@@ -1,39 +1,46 @@
+
 from functools import partial
+
 import tensorflow as tf
 
 
 class Metric():
-    """
+    """Root class for all metrics
+
     Attributes:
-        func: m = f(y, y_pred)
+        func: f(y, ypred) -> m
 
     Methods:
         __call__: Evaluates the metric
     """
-
     def __init__(self, func) -> None:
         self.func = func
+
 
     def __call__(self, *args) -> float:
         return self.func(*args)
 
 
 class MeanIOU(Metric):
-    """Mean IOU metric
-    """
-
+    """Mean IOU metric"""
     def __init__(self, num_classes) -> None:
-        super().__init__(partial(m_iou, num_classes))
+        super().__init__(partial(mean_iou, num_classes))
 
 
-def m_iou(num_classes: int, labels: tf.Tensor, predictions: tf.Tensor) -> float:
+def mean_iou(
+    num_classes: int, 
+    labels: tf.Tensor, 
+    predictions: tf.Tensor
+) -> float:
     """Computes the mean IOU for a batch
 
     Args:
-        num_classes: The number of classes
-        labels: The segmentation map labels, as one hot, of shape (batch, h, w, num_classes)
-            or not, of shape (batch, h, w) (will be one hot-ed)
-        predictions: The segmentation map predictions, as softmax, of shape(batch, h, w, num_classes)
+        num_classes (int): Number of classes
+        labels (tf.Tensor): The segmentation map label, 
+            as tensor of shape (batch, h, w, num_classes)
+            or as tensor of shape (batch, h, w) (will be one hot-ed)
+        predictions (tf.Tensor): The segmentation map prediction, 
+            as softmax of shape(batch, h, w, num_classes)
 
     Returns:
         mean_iou_score: The Mean IoU Score
