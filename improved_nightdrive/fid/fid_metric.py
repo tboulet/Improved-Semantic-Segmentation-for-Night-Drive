@@ -1,5 +1,4 @@
 '''
-path_checkpoint: path to the checkpoint of GAN
 path_night_test_images: path to folder containing test images for night
 path_day_test_images: path to folder containing test images for day
 '''
@@ -8,17 +7,17 @@ import math
 import sys
 import numpy as np
 import tensorflow as tf
-import tensorflow_datasets as tfds
 from scipy import linalg
 from tqdm import tqdm
 
 
 BATCH_SIZE = 14
 N_IMAGES = 28
+IMAGE_SIZE = (256, 256)
 path_night_test_images = "dataset/testB"
-path_day_test_images = "dataset/testA"
+path_night_generated_images = "dataset/trainB"  #Not trainB (real night images) but some generated images
 
-
+print("Loading Inception model...")
 count = math.ceil(N_IMAGES/BATCH_SIZE)
 inception_model = tf.keras.applications.InceptionV3(include_top=False, 
                               weights="imagenet", 
@@ -29,14 +28,14 @@ def load_image(path):
     path,
     label_mode = None,
     seed=420,
-    image_size=(256, 256),
+    image_size=IMAGE_SIZE,
     batch_size=BATCH_SIZE)
     return images
     
 def load_embedding(images):
     # return inception_model.predict(images)
     image_embeddings = []
-    for _ in tqdm(range(count)):
+    for _ in range(count):
         img = next(iter(images))
         embeddings = inception_model.predict(img)
         image_embeddings.extend(embeddings)
@@ -44,19 +43,19 @@ def load_embedding(images):
 
 
 #ORIGINAL NIGHT IMAGE DISTRIBUTION
+print("Loading original night images...")
 night_original_images = load_image(path_night_test_images)
-day_original_images = load_image(path_day_test_images)
 real_embeddings = load_embedding(night_original_images)
 mu1, sigma1 = real_embeddings.mean(axis=0), np.cov(real_embeddings, rowvar=False)
 
 
 
 #FID
-def fid():    
+def fid(path_night_generated_images):  
+    print("Computing FID...")  
+    
     #GENERATED NIGHT IMAGE DISTRIBUTION
-    def gan(i):
-        return i
-    night_generated_images = gan(day_original_images)
+    night_generated_images = load_image(path_night_generated_images)
     generated_embeddings = load_embedding(night_generated_images)
     mu2, sigma2 = generated_embeddings.mean(axis=0), np.cov(generated_embeddings,  rowvar=False)
     
@@ -76,4 +75,4 @@ def fid():
 
 
 if __name__ == '__main__':
-    print("Score FID:", fid())
+    print("Score FID:", fid(path_night_generated_images=path_night_generated_images))
