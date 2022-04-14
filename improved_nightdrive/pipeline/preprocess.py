@@ -6,7 +6,7 @@ import tensorflow as tf
 
 
 class Preprocess():
-    """Root class for all processes
+    """Base class for all processes
 
     Attributes:
         func: f(x_inputs, y_inputs) -> modif_x_inputs, modif_y_inputs
