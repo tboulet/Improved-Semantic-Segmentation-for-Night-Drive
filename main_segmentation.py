@@ -11,6 +11,31 @@ from improved_nightdrive.pipeline.preprocess import AddNoise, RandomCrop, Random
 from improved_nightdrive.segmentation.models import make_model
 
 
+if not os.path.isdir("./results/"):
+    os.mkdir("./results/")
+if not os.path.isdir("./results/sweep/"):
+    os.mkdir("./results/sweep/")
+if not os.path.isdir("./results/sweep/deeplabv3_day_only/"):
+    os.mkdir("./results/sweep/deeplabv3_day_only/models/")
+    os.mkdir("./results/sweep/deeplabv3_day_only/evolution/")
+if not os.path.isdir("./results/sweep/deeplabv3_night_only/"):
+    os.mkdir("./results/sweep/deeplabv3_night_only/evolution/")
+    os.mkdir("./results/sweep/deeplabv3_night_only/models/")
+if not os.path.isdir("./results/sweep/deeplabv3_both/"):
+    os.mkdir("./results/sweep/unetmobilenetv2_both/evolution/")
+    os.mkdir("./results/sweep/unetmobilenetv2_both/models/")
+if not os.path.isdir("./results/sweep/unetmobilenetv2_day_only/"):
+    os.mkdir("./results/sweep/unetmobilenetv2_day_only/evolution/")
+    os.mkdir("./results/sweep/unetmobilenetv2_day_only/models/")
+if not os.path.isdir("./results/sweep/unetmobilenetv2_night_only/"):
+    os.mkdir("./results/sweep/unetmobilenetv2_night_only/evolution/")
+    os.mkdir("./results/sweep/unetmobilenetv2_night_only/models/")
+if not os.path.isdir("./results/sweep/unetmobilenetv2_both/"):
+    os.mkdir("./results/sweep/unetmobilenetv2_both/evolution")
+    os.mkdir("./results/sweep/unetmobilenetv2_both/models/")
+
+    
+
 default_config = {
     'model_name': 'unetmobilenetv2',
     'image_size': 224,
