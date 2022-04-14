@@ -498,9 +498,13 @@ class cyclegan(object):
         init_op = tf.global_variables_initializer()
         self.sess.run(init_op)
         if args.which_direction == 'AtoB':
-            sample_files = glob('./datasets/{}/*.*'.format(self.dataset_dir + '/testA'))
+            sample_files = glob('./datasets/{}/*.*'.format(self.dataset_dir + '/'+args.train_or_test+'A'))
+            fake_img_folder = f"Processed_datasets/{args.train_or_test}A/{os.path.basename(args.checkpoint_path)}/fake_img/"
+            refine_fake_folder = f"Processed_datasets/{args.train_or_test}A/{os.path.basename(args.checkpoint_path)}/refine_fake/"
         elif args.which_direction == 'BtoA':
-            sample_files = glob('./datasets/{}/*.*'.format(self.dataset_dir + '/testB'))
+            sample_files = glob('./datasets/{}/*.*'.format(self.dataset_dir + '/'+args.train_or_test+'B'))
+            fake_img_folder = f"Processed_datasets/{args.train_or_test}B/{os.path.basename(args.checkpoint_path)}/fake_img/"
+            refine_fake_folder = f"Processed_datasets/{args.train_or_test}B/{os.path.basename(args.checkpoint_path)}/refine_fake/"
         else:
             raise Exception('--which_direction must be AtoB or BtoA')
 
@@ -515,8 +519,6 @@ class cyclegan(object):
             sample_image = np.array(sample_image).astype(np.float32)
 
             fake_img,refine_fake,rec_img,cycle_img = self.sess.run([out_var,refine_var,rec_var,cycle_var], feed_dict={in_var: sample_image})
-            fake_img_folder = f"Processed_datasets/testA/{os.path.basename(args.checkpoint_path)}/fake_img/"
-            refine_fake_folder = f"Processed_datasets/testA/{os.path.basename(args.checkpoint_path)}/refine_fake/"
 
             if not os.path.exists(fake_img_folder):
                 os.makedirs(fake_img_folder)
