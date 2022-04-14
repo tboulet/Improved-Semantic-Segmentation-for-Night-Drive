@@ -14,7 +14,7 @@ class Preprocess():
     Methods:
         __call__: Applies preprocess
     """
-    def __init__(self, func):
+    def __init__(self, func) -> None:
         self.func = func
 
 
