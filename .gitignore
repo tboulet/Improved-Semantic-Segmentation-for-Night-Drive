@@ -2,6 +2,9 @@ venv*
 data
 test
 dataset
+datasets
+Processed_datasets
+check
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
