@@ -12,8 +12,8 @@ import pathlib
 BATCH_SIZE = 14
 N_IMAGES = 28
 IMAGE_SIZE = (256, 256)
-path_night_test_images = "dataset/testB"    #Path to night images (real) 
-log_filename = "dataset/fid_logs"
+path_night_test_images = "ForkGAN/datasets/BDD100K/testB"    #Path to night images (real) 
+log_filename = "ForkGAN/datasets/BDD100K/fid_logs"
 
 print("Loading Inception model...")
 inception_model = tf.keras.applications.InceptionV3(include_top=False, 
@@ -32,7 +32,7 @@ def load_image(path):
 def load_embedding(images):
     # return inception_model.predict(images)
     image_embeddings = []
-    for img in images:
+    for img in tqdm(images):
         embeddings = inception_model.predict(img)
         image_embeddings.extend(embeddings)
     return np.array(image_embeddings)
@@ -43,6 +43,8 @@ print("Loading original night images...")
 night_original_images = load_image(path_night_test_images)
 real_embeddings = load_embedding(night_original_images)
 mu1, sigma1 = real_embeddings.mean(axis=0), np.cov(real_embeddings, rowvar=False)
+del night_original_images
+del real_embeddings
 
 
 
@@ -89,9 +91,9 @@ def get_list_of_fids():
         fid = float(line.split()[0])
         fid_list.append(fid)
     return fid_list
-    
-    
-    
+
+
+
 
 if __name__ == '__main__':
-    print("Score FID:", fid(path_night_generated_images="dataset/trainB"))
+    print("Score FID:", fid(path_night_generated_images="ForkGAN/Processed_datasets/testA"))
