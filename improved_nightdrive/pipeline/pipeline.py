@@ -11,12 +11,14 @@ from tensorflow.keras.models import Model, save_model
 from tensorflow.keras.losses import CategoricalCrossentropy, MeanSquaredError
 from tqdm import tqdm
 
+from improved_nightdrive.pipeline.metric import Metric
+
 if TYPE_CHECKING:
     from improved_nightdrive.pipeline.callback import Callback
-    from improved_nightdrive.pipeline.metric import Metric
     from improved_nightdrive.pipeline.preprocess import Preprocess
 
 
+# TODO@raffaelbdl: Possibly inusable
 class Evaluation():
     """Evaluation pipeline of a trained model
 
@@ -105,8 +107,8 @@ class Training():
         loss (str): A loss function used for training
             -> available losses : ['cce', 'mse']
 
-        x_dir_path (str): Path to image dataset
-        y_dir_path (str): Path to label dataset
+        x_dir_path (str): Path to images dataset
+        y_dir_path (str): Path to labels dataset
 
         metrics (List[Metric]): A list of metrics to follow progress
         preprocesses (List[Preprocess]): A list of preprocesses to apply IN ORDER
@@ -153,13 +155,15 @@ class Training():
         num_epochs: int = 10,
         batch_size: int = 12,
         save_model_bool: bool = False,
+        save_name: str = "",
+        lr: float = 2e-4
     ) -> None:
         """Trains the model"""
         sorted_x_dir = sorted(os.listdir(self.x_dir_path))
         sorted_y_dir = sorted(os.listdir(self.y_dir_path))
         num_elem = len(sorted_x_dir)
 
-        opt = tf.keras.optimizers.Adam(2e-4)
+        opt = tf.keras.optimizers.Adam(lr)
 
         idx = list(range(num_elem))
         random.shuffle(idx)
@@ -167,7 +171,7 @@ class Training():
         self.valid_idx = valid_idx = idx[int(len(idx)*0.8):int(len(idx)*0.9)]
         self.test_idx = test_idx = idx[int(len(idx)*0.9):]
 
-        for epoch in tqdm(range(num_epochs)):
+        for epoch in tqdm(range(num_epochs), desc="Epoch training loop"):
 
             logs = {}
 
@@ -198,8 +202,9 @@ class Training():
                 grads = tape.gradient(train_loss, self.model.trainable_weights)
                 opt.apply_gradients(zip(grads, self.model.trainable_weights))
 
-            logs.update(train_loss=train_loss.numpy())
-            logs.update((metric.func(train_ybatch, train_ypred).numpy() for metric in self.metrics))
+            logs["train_loss"] = train_loss.numpy()
+            for metric in self.metrics:
+                logs["train_"+metric.name] = metric(y=train_ybatch, ypred=train_ypred)
 
             # Valid
             random.shuffle(valid_idx)
@@ -224,14 +229,15 @@ class Training():
                 _ypred = tf.reshape(valid_ypred, shape=(-1, valid_ypred.shape[-1]))
                 valid_loss = self.loss(_y, _ypred)
             
-            logs.update(valid_loss=valid_loss.numpy())
-            logs.update((metric.func(valid_ybatch, valid_ypred).numpy() for metric in self.metrics))
+            logs["valid_loss"] = valid_loss.numpy()
+            for metric in self.metrics:
+                logs["valid_"+metric.name] = metric(y=valid_ybatch, ypred=valid_ypred)
 
             for callback in self.callbacks:
-                callback.at_epoch_end(logs=logs)
+                callback.at_epoch_end(logs=logs, model=self.model, epoch=epoch)
 
             if save_model_bool:
-                save_model(self.model, f"./results/model_at_{ep}")
+                save_model(self.model, save_name+f"at_{epoch}")
 
             print(f"Epoch {epoch+1}: ", logs)
 
@@ -258,3 +264,4 @@ def load_batch(
     y = tf.one_hot(tf.constant(np.array(ys)), num_classes, axis=-1, dtype=tf.float32)
 
     return x, y
+    
