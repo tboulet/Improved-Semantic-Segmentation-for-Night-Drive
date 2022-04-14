@@ -1,7 +1,5 @@
-'''
-path_night_test_images: path to folder containing test images for night
-path_day_test_images: path to folder containing test images for day
-'''
+#File for computing FID (distance metric between real night images distribution and generated night images distribution)
+
 
 import math
 import sys
@@ -9,16 +7,15 @@ import numpy as np
 import tensorflow as tf
 from scipy import linalg
 from tqdm import tqdm
-
+import pathlib
 
 BATCH_SIZE = 14
 N_IMAGES = 28
 IMAGE_SIZE = (256, 256)
-path_night_test_images = "dataset/testB"
-path_night_generated_images = "dataset/trainB"  #Not trainB (real night images) but some generated images
+path_night_test_images = "dataset/testB"    #Path to night images (real) 
+log_filename = "dataset/fid_logs"
 
 print("Loading Inception model...")
-count = math.ceil(N_IMAGES/BATCH_SIZE)
 inception_model = tf.keras.applications.InceptionV3(include_top=False, 
                               weights="imagenet", 
                               pooling='avg')
@@ -35,8 +32,7 @@ def load_image(path):
 def load_embedding(images):
     # return inception_model.predict(images)
     image_embeddings = []
-    for _ in range(count):
-        img = next(iter(images))
+    for img in images:
         embeddings = inception_model.predict(img)
         image_embeddings.extend(embeddings)
     return np.array(image_embeddings)
@@ -51,13 +47,17 @@ mu1, sigma1 = real_embeddings.mean(axis=0), np.cov(real_embeddings, rowvar=False
 
 
 #FID
-def fid(path_night_generated_images):  
+def fid(path_night_generated_images, save_score = True):  
+    '''Compute FID between night images and generated (day 2 night) night images. Possibly save its value into a file.
+    path_night_generated_images : the path to generated images'''
     print("Computing FID...")  
     
     #GENERATED NIGHT IMAGE DISTRIBUTION
     night_generated_images = load_image(path_night_generated_images)
     generated_embeddings = load_embedding(night_generated_images)
     mu2, sigma2 = generated_embeddings.mean(axis=0), np.cov(generated_embeddings,  rowvar=False)
+    del night_generated_images
+    del generated_embeddings
     
     #COMPUTE FID
     # calculate sum squared difference between means
@@ -68,11 +68,30 @@ def fid(path_night_generated_images):
     if np.iscomplexobj(covmean):
         covmean = covmean.real
         # calculate score
-        fid = ssdiff + np.trace(sigma1 + sigma2 - 2.0 * covmean)
-        return fid
+    fid = ssdiff + np.trace(sigma1 + sigma2 - 2.0 * covmean)
+    
+    #Save score into file data/fid_logs
+    if save_score:
+        
+        try:
+            file = open(log_filename, 'a')
+        except FileNotFoundError:
+            file = open(log_filename, 'w')
+        file.write(f"{fid} for night generated images '{pathlib.PurePath(path_night_generated_images)}'")
+        file.close()
+    
+    return fid
     
 
-
+def get_list_of_fids():
+    fid_list = list()
+    for line in open(log_filename, 'r'):
+        fid = float(line.split()[0])
+        fid_list.append(fid)
+    return fid_list
+    
+    
+    
 
 if __name__ == '__main__':
-    print("Score FID:", fid(path_night_generated_images=path_night_generated_images))
+    print("Score FID:", fid(path_night_generated_images="dataset/trainB"))
