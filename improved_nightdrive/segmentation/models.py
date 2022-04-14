@@ -1,21 +1,20 @@
 
 import tensorflow as tf
+
 from tensorflow.keras import Input
 from tensorflow.keras.applications import MobileNetV2, ResNet50
-from tensorflow.keras.models import Model
+from tensorflow.keras.initializers import HeNormal
 from tensorflow.keras.layers import (
     AveragePooling2D,
     BatchNormalization,
     Concatenate,
     Conv2D, 
     Conv2DTranspose, 
-    DepthwiseConv2D,
     Dropout,
     LeakyReLU, 
     UpSampling2D, 
-    ZeroPadding2D
 )
-from tensorflow.keras.initializers import HeNormal
+from tensorflow.keras.models import Model
 from tensorflow_addons.layers import InstanceNormalization
 
 
@@ -79,10 +78,10 @@ class PreTrainedMobileUnetv2(Model):
         return self.__call__(input_tensor, training=True)
 
 
-def u_net_pretrained(num_classes) -> Model:
+def UNet_MobileNetV2(image_size, num_classes) -> Model:
 
     encoder = MobileNetV2(
-        input_shape=(224,224,3), 
+        input_shape=(image_size,image_size,3), 
         include_top=False,
         weights='imagenet'
     )
@@ -96,7 +95,7 @@ def u_net_pretrained(num_classes) -> Model:
     encoder_outputs = [encoder.get_layer(layer).output for layer in bridge_layers]
     down = Model(inputs=encoder.input, outputs=encoder_outputs)
 
-    input = Input(shape=(224,224,3))
+    input = Input(shape=(image_size,image_size,3))
     bridges = down(input)
     x = bridges[-1]
     bridges = reversed(bridges[:-1])
@@ -158,7 +157,7 @@ def DilatedSpatialPyramidPooling(dspp_input):
     return output
 
 
-def DeeplabV3Plus(image_size, num_classes) -> Model:
+def DeeplabV3(image_size, num_classes) -> Model:
     model_input = Input(shape=(image_size, image_size, 3))
     resnet50 = ResNet50(
         weights="imagenet", include_top=False, input_tensor=model_input
@@ -180,5 +179,26 @@ def DeeplabV3Plus(image_size, num_classes) -> Model:
         size=(image_size // x.shape[1], image_size // x.shape[2]),
         interpolation="bilinear",
     )(x)
-    model_output = Conv2D(num_classes, kernel_size=(1, 1), padding="same")(x)
+    model_output = Conv2D(num_classes, kernel_size=(1, 1), padding="same", activation='softmax')(x)
     return Model(inputs=model_input, outputs=model_output)
+
+
+def make_model(config: dict) -> Model:
+    """Gets a model from the run config"""
+    model_name = config['model_name']
+    image_size = config['image_size']
+    num_classes = config['num_classes']
+
+    if model_name == 'deeplabv3':
+        return DeeplabV3(
+            image_size=image_size, 
+            num_classes=num_classes
+        )
+    elif model_name == 'unetmobilenetv2':
+        return UNet_MobileNetV2(
+            image_size=image_size, 
+            num_classes=num_classes
+        )
+    else:
+        raise NotImplementedError(model_name + " is not implemented !")
+
