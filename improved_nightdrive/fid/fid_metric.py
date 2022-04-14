@@ -96,4 +96,4 @@ def get_list_of_fids():
 
 
 if __name__ == '__main__':
-    print("Score FID:", fid(path_night_generated_images=sys.argv[1])
+    print("Score FID:", fid(path_night_generated_images=sys.argv[1]))
