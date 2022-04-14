@@ -1,1 +1,7 @@
 tensorflow==2.5.0
+numpy
+Pillow
+wandb
+matplotlib
+tqdm
+tensorflow_addons
