@@ -202,3 +202,12 @@ def make_model(config: dict) -> Model:
     else:
         raise NotImplementedError(model_name + " is not implemented !")
 
+
+def get_encoder_unetmobilenetv2(model: Model):
+    return Model(inputs=model.input, outputs=model.get_layer('conv2d').output)
+
+
+def get_encoder_deeplabv3(model: Model):
+    return Model(inputs=model.input, outputs=model.get_layer('conv2d').output)
+
+    
