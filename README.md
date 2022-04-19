@@ -1,5 +1,5 @@
 # Improved-Semantic-Segmentation-for-Night-Drive
-Project for improve semantic segmentation on driving images by night, using GAN and lightning methods.
+Project that aims at improving semantic segmentation on driving images at night-time, using GAN and lightning correction methods.
 
 ## Getting started
 ### Installation
