@@ -3,6 +3,9 @@
 
 import math
 import sys
+import matplotlib
+matplotlib.use("TkAgg")
+import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 from scipy import linalg
@@ -102,20 +105,28 @@ def fid(path_night_generated_images, save_score = True):
             file = open(log_filename, 'a')
         except FileNotFoundError:
             file = open(log_filename, 'w')
-        file.write(f"{fid} for night generated images '{pathlib.PurePath(path_night_generated_images)}'")
+        file.write(f"{fid} for night generated images '{pathlib.PurePath(path_night_generated_images)}'\n")
         file.close()
 
     return fid
 
 
-
-def get_list_of_fids():
+def get_fids():
     fid_list = list()
+    ckpt_name_list = list()
     for line in open(log_filename, 'r'):
         fid = float(line.split()[0])
         fid_list.append(fid)
-    return fid_list
+        ckpt_name_list.append(int(line.split('/')[-2].split('-')[-1]))
+    return fid_list, ckpt_name_list
 
+def plot_fids():
+    fids, names = get_fids()
+    plt.figure("FID")
+    plt.plot(names, fids)
+    plt.xlabel("nb of batch")
+    plt.ylabel("FID value")
+    plt.show()
 
 
 
