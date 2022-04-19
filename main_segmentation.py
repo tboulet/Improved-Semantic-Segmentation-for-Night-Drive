@@ -14,25 +14,25 @@ from improved_nightdrive.segmentation.models import make_model
 if not os.path.isdir("./results/"):
     os.mkdir("./results/")
 if not os.path.isdir("./results/sweep/"):
-    os.mkdir("./results/sweep/")
+    os.makedirs("./results/sweep/")
 if not os.path.isdir("./results/sweep/deeplabv3_day_only/"):
-    os.mkdir("./results/sweep/deeplabv3_day_only/models/")
-    os.mkdir("./results/sweep/deeplabv3_day_only/evolution/")
+    os.makedirs("./results/sweep/deeplabv3_day_only/models/")
+    os.makedirs("./results/sweep/deeplabv3_day_only/evolution/")
 if not os.path.isdir("./results/sweep/deeplabv3_night_only/"):
-    os.mkdir("./results/sweep/deeplabv3_night_only/evolution/")
-    os.mkdir("./results/sweep/deeplabv3_night_only/models/")
+    os.makedirs("./results/sweep/deeplabv3_night_only/evolution/")
+    os.makedirs("./results/sweep/deeplabv3_night_only/models/")
 if not os.path.isdir("./results/sweep/deeplabv3_both/"):
-    os.mkdir("./results/sweep/unetmobilenetv2_both/evolution/")
-    os.mkdir("./results/sweep/unetmobilenetv2_both/models/")
+    os.makedirs("./results/sweep/deeplabv3_both/evolution/")
+    os.makedirs("./results/sweep/deeplabv3_both/models/")
 if not os.path.isdir("./results/sweep/unetmobilenetv2_day_only/"):
-    os.mkdir("./results/sweep/unetmobilenetv2_day_only/evolution/")
-    os.mkdir("./results/sweep/unetmobilenetv2_day_only/models/")
+    os.makedirs("./results/sweep/unetmobilenetv2_day_only/evolution/")
+    os.makedirs("./results/sweep/unetmobilenetv2_day_only/models/")
 if not os.path.isdir("./results/sweep/unetmobilenetv2_night_only/"):
-    os.mkdir("./results/sweep/unetmobilenetv2_night_only/evolution/")
-    os.mkdir("./results/sweep/unetmobilenetv2_night_only/models/")
+    os.makedirs("./results/sweep/unetmobilenetv2_night_only/evolution/")
+    os.makedirs("./results/sweep/unetmobilenetv2_night_only/models/")
 if not os.path.isdir("./results/sweep/unetmobilenetv2_both/"):
-    os.mkdir("./results/sweep/unetmobilenetv2_both/evolution")
-    os.mkdir("./results/sweep/unetmobilenetv2_both/models/")
+    os.makedirs("./results/sweep/unetmobilenetv2_both/evolution")
+    os.makedirs("./results/sweep/unetmobilenetv2_both/models/")
 
     
 
@@ -108,8 +108,10 @@ callbacks = [
 ]
 
 if config['dataset'] == 'day_only':
-    x_dir_path = "./BDD100K/bdd100k/day/images/"
-    y_dir_path = "./BDD100K/bdd100k/day/labels/"
+    # x_dir_path = "./BDD100K/bdd100k/day/images/"
+    # y_dir_path = "./BDD100K/bdd100k/day/labels/"
+    x_dir_path = '/media/raffaelbdl/T7/BDD100K/bdd100k/day/images/'
+    y_dir_path = '/media/raffaelbdl/T7/BDD100K/bdd100k/day/labels/'
 elif config['dataset'] == 'night_only':
     x_dir_path = "./BDD100K/bdd100k/night/images/"
     y_dir_path = "./BDD100K/bdd100k/night/labels/"

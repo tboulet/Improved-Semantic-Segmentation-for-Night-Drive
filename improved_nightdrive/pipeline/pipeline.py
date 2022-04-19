@@ -204,7 +204,7 @@ class Training():
 
             logs["train_loss"] = train_loss.numpy()
             for metric in self.metrics:
-                logs["train_"+metric.name] = metric(y=train_ybatch, ypred=train_ypred)
+                logs["train_"+metric.name] = metric(train_ybatch, train_ypred)
 
             # Valid
             random.shuffle(valid_idx)
@@ -231,7 +231,7 @@ class Training():
             
             logs["valid_loss"] = valid_loss.numpy()
             for metric in self.metrics:
-                logs["valid_"+metric.name] = metric(y=valid_ybatch, ypred=valid_ypred)
+                logs["valid_"+metric.name] = metric(valid_ybatch, valid_ypred)
 
             for callback in self.callbacks:
                 callback.at_epoch_end(logs=logs, model=self.model, epoch=epoch)
