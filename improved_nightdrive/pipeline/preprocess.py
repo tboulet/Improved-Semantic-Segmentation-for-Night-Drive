@@ -1,8 +1,14 @@
 
 from functools import partial
 from typing import Tuple
+import yaml
 
+import numpy as np
 import tensorflow as tf
+
+
+correspondance = yaml.safe_load(open("./improved_nightdrive/pipeline/correspondance.yml", "r"))
+new_classes = len(np.unique(list(correspondance.values())))
 
 
 class Preprocess():
@@ -20,6 +26,33 @@ class Preprocess():
 
     def __call__(self, *args) -> Tuple[tf.Tensor, tf.Tensor]:
         return self.func(*args)
+
+
+class ReClass(Preprocess):
+    """Reclasses labels according to given correspondance"""
+    def __init__(self, num_classes: int = 19):
+
+        self.num_classes = num_classes
+        self.new_classes = new_classes
+
+        self.correspondance = correspondance
+
+        def change_class(
+            x_inputs: tf.Tensor,
+            y_inputs: tf.Tensor,
+        ) -> Tuple[tf.Tensor, tf.Tensor]:
+
+            _y = tf.argmax(y_inputs, axis=-1)
+
+            for i in range(self.num_classes):
+                _y = tf.where(_y == i, self.correspondance[i], _y)
+            _y = tf.where(_y == 255, self.correspondance[255], _y)
+
+            _y = tf.one_hot(_y, self.new_classes, axis=-1, dtype=tf.float32)
+
+            return (x_inputs, _y)
+        
+        super().__init__(change_class)
 
 
 class AddNoise(Preprocess):

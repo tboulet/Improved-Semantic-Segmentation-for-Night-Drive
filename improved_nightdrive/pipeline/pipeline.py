@@ -3,6 +3,7 @@ import os
 import random
 from typing import List, Optional, Tuple, TYPE_CHECKING
 from warnings import warn
+import yaml
 
 import numpy as np
 from PIL import Image
@@ -17,6 +18,7 @@ if TYPE_CHECKING:
     from improved_nightdrive.pipeline.callback import Callback
     from improved_nightdrive.pipeline.preprocess import Preprocess
 
+correspondance = yaml.safe_load(open("./improved_nightdrive/pipeline/correspondance.yml", "r"))
 
 # TODO@raffaelbdl: Possibly inusable
 class Evaluation():
@@ -179,6 +181,7 @@ class Training():
             random.shuffle(train_idx)
             num_batch = len(train_idx) // batch_size
             for i in tqdm(range(num_batch), desc="Inner training loop"):
+                
                 idx_batch = train_idx[i*batch_size: (i+1)*batch_size]
                 train_xbatch, train_ybatch = load_batch(
                     idx_batch,
@@ -255,12 +258,13 @@ def load_batch(
     ys = []
 
     for i in idx:
-        ix = Image.open(os.path.join(x_dir_path, sorted_x_dir[i]))
-        iy = Image.open(os.path.join(y_dir_path, sorted_y_dir[i]))
-        xs.append(np.array(ix))
-        ys.append(np.array(iy))
+        ix = np.array(Image.open(os.path.join(x_dir_path, sorted_x_dir[i])))
+        iy = np.array(Image.open(os.path.join(y_dir_path, sorted_y_dir[i])))
 
-    x = tf.constant(np.array(xs), dtype=tf.float32)
+        xs.append(ix)
+        ys.append(iy)
+
+    x = tf.constant(np.array(xs), dtype=tf.float32) / 255.
     y = tf.one_hot(tf.constant(np.array(ys)), num_classes, axis=-1, dtype=tf.float32)
 
     return x, y

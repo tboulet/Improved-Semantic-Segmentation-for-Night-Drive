@@ -188,6 +188,10 @@ def make_model(config: dict) -> Model:
     model_name = config['model_name']
     image_size = config['image_size']
     num_classes = config['num_classes']
+    new_classes = config['new_classes']
+
+    if new_classes > 0:
+        num_classes = new_classes
 
     if model_name == 'deeplabv3':
         return DeeplabV3(
