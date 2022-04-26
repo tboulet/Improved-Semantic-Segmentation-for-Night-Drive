@@ -1,13 +1,15 @@
 
 import argparse
 import os
+import yaml
 
+import numpy as np
 import wandb
 
 from improved_nightdrive.pipeline.callback import InferOnImage, WandbCallback 
 from improved_nightdrive.pipeline.metric import MeanIOU
 from improved_nightdrive.pipeline.pipeline import Training
-from improved_nightdrive.pipeline.preprocess import AddNoise, RandomCrop, RandomFlip, Resize
+from improved_nightdrive.pipeline.preprocess import AddNoise, EqualizeHistogram, FastClahe, GammaProcess, LogProcess, RandomCrop, RandomFlip, Resize, ReClass
 from improved_nightdrive.segmentation.models import make_model
 
 
@@ -34,7 +36,8 @@ if not os.path.isdir("./results/sweep/unetmobilenetv2_both/"):
     os.makedirs("./results/sweep/unetmobilenetv2_both/evolution")
     os.makedirs("./results/sweep/unetmobilenetv2_both/models/")
 
-    
+correspondance = yaml.safe_load(open("./improved_nightdrive/pipeline/correspondance.yml", "r"))
+new_classes = len(np.unique(list(correspondance.values())))
 
 default_config = {
     'model_name': 'unetmobilenetv2',
@@ -44,32 +47,50 @@ default_config = {
     'batch_size': 3,
     'learning_rate': 1e-4,
     'dataset': 'day_only',
-    'num_classes': 19
+    'num_classes': 19,
+    'new_classes': new_classes,
 }
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--model_name', type=str)
 parser.add_argument('--dataset', type=str)
+
+# Image Processing
+parser.add_argument('--image_process', required=False, type=str)
+
 args = parser.parse_args()
 
 default_config['model_name'] = args.model_name
 default_config['dataset'] = args.dataset
+default_config['image_process'] = args.image_process if args.image_process else None
 
-wandb.init(config=default_config)
-config = wandb.config
+# wandb.init(config=default_config)
+# config = wandb.config
+config = default_config
 
 model = make_model(config)
 
 metrics = [
-    MeanIOU(config['num_classes']),
+    MeanIOU(config['new_classes'] if config['new_classes'] > 0 else config['num_classes']),
 ]
 
 preprocesses = [
     AddNoise(),
     Resize(config['intermediate_size']),
     RandomCrop(config['image_size']),
-    RandomFlip()
+    RandomFlip(),
+    ReClass(),
 ]
+
+if default_config['image_process'] == 'equalize_histogram': #BUG : broken
+    preprocesses.append(EqualizeHistogram())
+elif default_config['image_process'] == 'fast_clahe':
+    preprocesses.append(FastClahe())
+elif default_config['image_process'] == 'gamma_process':
+    preprocesses.append(GammaProcess())
+elif default_config['image_process'] == 'log_process':
+    preprocesses.append(LogProcess())
+
 
 inference_example_path = "./ressources/examples/"
 
@@ -104,7 +125,7 @@ callbacks = [
         intermediate_size=config['intermediate_size'],
         save_path=inference_save_path
     ),
-    WandbCallback()
+    # WandbCallback()
 ]
 
 if config['dataset'] == 'day_only':
@@ -136,5 +157,5 @@ T.train(
     batch_size=config['batch_size'],
     save_model_bool=True,
     save_name=model_save_path,
-    lr=config['learning_rate']
+    lr=config['learning_rate'],
 )
