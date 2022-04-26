@@ -13,7 +13,7 @@ pip install -r requirements.txt
 
 ### Train segmentation
 
-All tasks can be performed from main_segmentation.py
+All tasks can be performed from main_segmentation.py.
 
 To start a training run, please change the directory paths in `./main_segmentation.py`, then in bash:
 
@@ -24,13 +24,15 @@ python main_segmentation.py --model_name <unetmobilenetv2|deeplabv3> --dataset <
 You can vizualize the inference results in `./results`.
 
 ## ForkGAN
-ForkGAN est l'amélioration de CycleGAN qui nous permet de générer un dataset de nuit
+ForkGAN is an improved version of CycleGAN able of generating a night-time dataset.
 
 ### Dataset
-Nous avons utilisé le dataset BDD100K disponible ici : [https://bdd-data.berkeley.edu](https://bdd-data.berkeley.edu)
+We used the BDD100K dataset available here: [https://bdd-data.berkeley.edu](https://bdd-data.berkeley.edu).
 
-Il doit être installé ainsi:
-ForkGAN
+Here are the paths to install it:
+
+`ForkGAN`
+
     |datasets
         |BDD100K
             |trainA (images de jour)
@@ -39,18 +41,19 @@ ForkGAN
             |testB (images de nuit)
 
 ### Requirements
-Le modèle fonctionne avec tensorflow 1. La liste des modules supplémentaires requis se situe dans le fichier ForkgGAN/requirements.txt
+The model works on Tensorflow 1. The list of the required modules can be found in the file ForkGAN/requirements.txt.
 
-### Entrainement
-Le modèle peut être entrainé en lançant le script scripts/bdd_train.sh depuis le dossier ForkGAN/
+### Training
+The model can be trained by lauching the script `scripts/bdd_train.sh` from the `ForkGAN/` folder.
 
-### Créer un dataset de nuit
-Un dataset de nuit peut être créé en lançant le script scripts/bdd_process_train.sh depuis le dossier ForkGAN/. Il sera enregistré dans Processed_datasets/trainA.
+### Create a night-time dataset
+A night-time dataset can be created by launching the script `scripts/bdd_process_train.sh` from the `ForkGAN/` folder. He will then be saved in the `Processed_datasets/trainA` folder.
 
-Un petit dataset de nuit peut être créé en lançant le script scripts/bdd_process_train.sh depuis le dossier ForkGAN/. Il sera enregistré dans Processed_datasets/testA.
+A small-sized dataset can be created by launching the script `scripts/bdd_process_train.sh` from the `ForkGAN/` folder. He will then be saved in the `Processed_datasets/testA` folder.
 
-### Calcul des métriques
-#### FID d'un dataset créé
-La distance FID d'un dataset créé peut être calculée en lançant le script fid_metric.py:
-    python improved_nightdrive/fid/fid_metric.py "chemin vers le dataset"
-Les résultats sont stockés dans ForkGAN/datasets/BDD100K/fid_logs
+### Calculation of the metrics
+#### FID of a created dataset
+The Fréchet inception distance of a dataset can be calculated using the script `fid_metric.py`:
+    `python improved_nightdrive/fid/fid_metric.py` "chemin vers le dataset"
+    
+The results are stored in the `ForkGAN/datasets/BDD100K/fid_logs` folder.

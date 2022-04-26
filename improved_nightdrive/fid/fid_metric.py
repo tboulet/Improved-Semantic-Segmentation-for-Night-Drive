@@ -3,22 +3,37 @@
 
 import math
 import sys
+import matplotlib
+matplotlib.use("TkAgg")
+import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 from scipy import linalg
 from tqdm import tqdm
 import pathlib
+print(sys.path)
+sys.path.append("/workspace")
+from improved_nightdrive.segmentation.models import UNet_MobileNetV2, get_encoder_unetmobilenetv2, DeeplabV3, get_encoder_deeplabv3
 
-BATCH_SIZE = 14
+ENCODER = "Inception"
+BATCH_SIZE = 8
 N_IMAGES = 28
-IMAGE_SIZE = (256, 256)
+IMAGE_SIZE = (512, 256)
 path_night_test_images = "ForkGAN/datasets/BDD100K/testB"    #Path to night images (real) 
 log_filename = "ForkGAN/datasets/BDD100K/fid_logs"
 
-print("Loading Inception model...")
-inception_model = tf.keras.applications.InceptionV3(include_top=False, 
-                              weights="imagenet", 
-                              pooling='avg')
+if ENCODER == "Inception":
+    print("Loading Inception model...")
+    net = tf.keras.applications.InceptionV3(include_top=False, 
+                                weights="imagenet", 
+                                pooling='avg')
+
+else:
+    print("Loading Segmentation model...")
+    model = DeeplabV3(224, 19)
+    model.load_weights("./results/sweep/deeplabv3_day_only/models/deeplabv3_at_49")
+    net = get_encoder_deeplabv3(model)
+    net.summary()
 
 def load_image(path):
     images = tf.keras.utils.image_dataset_from_directory(
@@ -28,12 +43,23 @@ def load_image(path):
     image_size=IMAGE_SIZE,
     batch_size=BATCH_SIZE)
     return images
-    
+
+
+def pre_process_image(imgs):
+    if ENCODER == "Inception":
+        imgs = tf.keras.applications.inception_v3.preprocess_input(imgs)
+    else:
+        imgs = tf.image.resize(imgs, (448, 224))
+        imgs = (imgs - 127.5) / 255
+        imgs = tf.image.random_crop(imgs, (imgs.shape[0], 224, 224, 3))
+    return imgs
+
+
 def load_embedding(images):
-    # return inception_model.predict(images)
     image_embeddings = []
     for img in tqdm(images):
-        embeddings = inception_model.predict(img)
+        img = pre_process_image(img)
+        embeddings = tf.squeeze(net.predict(img))
         image_embeddings.extend(embeddings)
     return np.array(image_embeddings)
 
@@ -53,7 +79,7 @@ def fid(path_night_generated_images, save_score = True):
     '''Compute FID between night images and generated (day 2 night) night images. Possibly save its value into a file.
     path_night_generated_images : the path to generated images'''
     print("Computing FID...")  
-    
+
     #GENERATED NIGHT IMAGE DISTRIBUTION
     night_generated_images = load_image(path_night_generated_images)
     generated_embeddings = load_embedding(night_generated_images)
@@ -79,19 +105,28 @@ def fid(path_night_generated_images, save_score = True):
             file = open(log_filename, 'a')
         except FileNotFoundError:
             file = open(log_filename, 'w')
-        file.write(f"{fid} for night generated images '{pathlib.PurePath(path_night_generated_images)}'")
+        file.write(f"{fid} for night generated images '{pathlib.PurePath(path_night_generated_images)}'\n")
         file.close()
-    
-    return fid
-    
 
-def get_list_of_fids():
+    return fid
+
+
+def get_fids():
     fid_list = list()
+    ckpt_name_list = list()
     for line in open(log_filename, 'r'):
         fid = float(line.split()[0])
         fid_list.append(fid)
-    return fid_list
+        ckpt_name_list.append(int(line.split('/')[-2].split('-')[-1]))
+    return fid_list, ckpt_name_list
 
+def plot_fids():
+    fids, names = get_fids()
+    plt.figure("FID")
+    plt.plot(names, fids)
+    plt.xlabel("nb of batch")
+    plt.ylabel("FID value")
+    plt.show()
 
 
 
