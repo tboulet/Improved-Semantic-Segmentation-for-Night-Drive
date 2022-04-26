@@ -43,6 +43,7 @@ class Evaluation():
         y_dir_path: str = "./dataset/seg/",
         metrics: List['Metric'] = [],
         preprocesses: Optional[List['Preprocess']] = [],
+        batch_size=16,
      ) -> None:
 
         assert len(metrics) > 0, "Metrics must be specified"
@@ -63,6 +64,8 @@ class Evaluation():
         else:
             warn(loss + " is not implemented, cce used by default")
             self.loss = CategoricalCrossentropy()
+
+        self.batch_size = batch_size
 
         self.x_dir_path = x_dir_path
         self.y_dir_path = y_dir_path
@@ -96,6 +99,33 @@ class Evaluation():
             evaluated_metrics.append(metric.func(y, ypred))
 
         return evaluated_metrics
+
+
+    def evaluate(self):
+        dataset_metrics = [0 for _ in range(len(self.metrics))]
+        sorted_x_dir = sorted(os.listdir(self.x_dir_path))
+        sorted_y_dir = sorted(os.listdir(self.y_dir_path))
+        num_elem = len(sorted_x_dir)
+
+        idx = list(range(num_elem))
+        random.shuffle(idx)
+
+        num_batch = len(idx) // self.batch_size
+        for i in tqdm(range(num_batch), desc="Evaluation"):
+            idx_batch = idx[i*self.batch_size: (i+1)*self.batch_size]
+            train_xbatch, train_ybatch = load_batch(
+                idx_batch,
+                self.num_classes,
+                self.x_dir_path,
+                self.y_dir_path,
+                sorted_x_dir,
+                sorted_y_dir
+            )
+            sample_metrics = self.sample_evaluate(train_xbatch, train_ybatch)
+            for j in range(len(dataset_metrics)):
+                dataset_metrics[j] += sample_metrics[j] / num_batch
+
+        return dataset_metrics
 
 
 class Training():
