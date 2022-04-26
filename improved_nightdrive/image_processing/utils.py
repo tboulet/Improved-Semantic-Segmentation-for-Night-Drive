@@ -28,6 +28,7 @@ def lab_gamma_process(img, p=1, c=100):
     b = img[:, :, 2]
     return tf.stack((L, a, b), axis=-1)
 
+
 def tf_equalize_histogram(image):
     image = image * 255
     values_range = tf.constant([0., 255.], dtype = tf.float32)
@@ -44,6 +45,7 @@ def tf_equalize_histogram(image):
     eq_hist = tf.expand_dims(tf.gather_nd(px_map, tf.cast(image, tf.int32)), 2)
     return tf.squeeze(eq_hist)
 
+
 def lab_hist(image):
     values_range = tf.constant([0., 100.], dtype = tf.float32)
     histogram = tf.histogram_fixed_width(image, values_range, 100)
@@ -58,3 +60,4 @@ def lab_hist(image):
 
     eq_hist = tf.expand_dims(tf.gather_nd(px_map, tf.cast(image, tf.int32)), 2)
     return tf.squeeze(eq_hist)
+    
