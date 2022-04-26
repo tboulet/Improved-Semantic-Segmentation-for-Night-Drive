@@ -6,6 +6,15 @@ import yaml
 import numpy as np
 import tensorflow as tf
 
+from improved_nightdrive.image_processing.utils import (
+    fast_clahe, 
+    log_process, 
+    gamma_process,
+    lab_gamma_process,
+    tf_equalize_histogram,
+    lab_hist
+) 
+
 
 correspondance = yaml.safe_load(open("./improved_nightdrive/pipeline/correspondance.yml", "r"))
 new_classes = len(np.unique(list(correspondance.values())))
@@ -26,6 +35,145 @@ class Preprocess():
 
     def __call__(self, *args) -> Tuple[tf.Tensor, tf.Tensor]:
         return self.func(*args)
+
+
+class AddNoise(Preprocess):
+    """Adds noise to first input"""
+    def __init__(self):
+
+        def add_noise(
+            x_inputs: tf.Tensor, 
+            y_inputs: tf.Tensor=None
+        ) -> Tuple[tf.Tensor, tf.Tensor]:
+
+            noise_map = tf.random.normal(shape=x_inputs.shape)
+
+            return (x_inputs + noise_map, y_inputs)
+
+        super().__init__(add_noise)
+
+
+class EqualizeHistogram(Preprocess):
+    """Apply log process to first input"""
+    def __init__(self) -> None:
+
+        def func(
+            x_inputs: tf.Tensor,
+            y_inputs: tf.Tensor=None,
+        ) -> Tuple[tf.Tensor, tf.Tensor]:
+
+            x_inputs = tf.map_fn(tf_equalize_histogram, x_inputs)
+
+            return (x_inputs, y_inputs)
+
+        super().__init__(func)
+
+
+class FastClahe(Preprocess):
+    """Apply fast clahe to first input"""
+    def __init__(self) -> None:
+
+        def func(
+            x_inputs: tf.Tensor,
+            y_inputs: tf.Tensor=None,
+        ) -> Tuple[tf.Tensor, tf.Tensor]:
+
+            x_inputs = tf.map_fn(fast_clahe, x_inputs)
+
+            return (x_inputs, y_inputs)
+
+        super().__init__(func)
+
+
+class GammaProcess(Preprocess):
+    """Apply gamma process to first input"""
+    def __init__(self) -> None:
+
+        def func(
+            x_inputs: tf.Tensor,
+            y_inputs: tf.Tensor=None,
+        ) -> Tuple[tf.Tensor, tf.Tensor]:
+
+            x_inputs = tf.map_fn(gamma_process, x_inputs)
+
+            return (x_inputs, y_inputs)
+
+        super().__init__(func)
+
+
+class Normalize(Preprocess):
+    """Normalizes first input"""
+    def __init__(self):
+
+        def normalize(
+            x_inputs: tf.Tensor,
+            y_inputs: tf.Tensor=None
+        ) -> Tuple[tf.Tensor, tf.Tensor]:
+
+            means = tf.reduce_mean(x_inputs, x_inputs.shape[1:], keepdims=True)
+            stds = tf.math.reduce_std(x_inputs, x_inputs.shape[1:], keepdims=True)
+
+            x_inputs = (x_inputs - means) / stds
+
+            return (x_inputs, y_inputs)
+            
+        super().__init__(normalize)
+
+
+class LogProcess(Preprocess):
+    """Apply log process to first input"""
+    def __init__(self) -> None:
+
+        def func(
+            x_inputs: tf.Tensor,
+            y_inputs: tf.Tensor=None,
+        ) -> Tuple[tf.Tensor, tf.Tensor]:
+
+            x_inputs = tf.map_fn(log_process, x_inputs)
+
+            return (x_inputs, y_inputs)
+
+        super().__init__(func)
+
+
+class RandomCrop(Preprocess):
+    """Crops randomly both inputs"""
+    def __init__(self, size: int):
+
+        def crop(
+            x_inputs: tf.Tensor, 
+            y_inputs: tf.Tensor
+        ) -> Tuple[tf.Tensor]:
+
+            c = x_inputs.shape[-1]
+
+            random_crop_fn = partial(one_crop_random, size=size)
+            outputs = tf.map_fn(random_crop_fn, tf.concat((x_inputs, y_inputs), axis=-1))  
+
+            x_inputs, y_inputs = outputs[..., :c], outputs[..., c:]  
+
+            return (x_inputs, y_inputs)
+
+        super().__init__(crop)
+
+
+class RandomFlip(Preprocess):
+    """Randomly flips both input"""
+    def __init__(self):
+
+        def flip(
+            x_inputs: tf.Tensor,
+            y_inputs: tf.Tensor
+        ) -> Tuple[tf.Tensor]:
+            
+            c = x_inputs.shape[-1]
+            outputs = tf.map_fn(one_random_flip, tf.concat((x_inputs, y_inputs), axis=-1))
+
+            x_inputs, y_inputs = outputs[..., :c], outputs[..., c:]
+
+            return (x_inputs, y_inputs)
+
+        super().__init__(flip)
 
 
 class ReClass(Preprocess):
@@ -55,62 +203,6 @@ class ReClass(Preprocess):
         super().__init__(change_class)
 
 
-class AddNoise(Preprocess):
-    """Adds noise to first input"""
-    def __init__(self):
-
-        def add_noise(
-            x_inputs: tf.Tensor, 
-            y_inputs: tf.Tensor=None
-        ) -> Tuple[tf.Tensor, tf.Tensor]:
-
-            noise_map = tf.random.normal(shape=x_inputs.shape)
-
-            return (x_inputs + noise_map, y_inputs)
-
-        super().__init__(add_noise)
-     
-
-class RandomCrop(Preprocess):
-    """Crops randomly both inputs"""
-    def __init__(self, size: int):
-
-        def crop(
-            x_inputs: tf.Tensor, 
-            y_inputs: tf.Tensor
-        ) -> Tuple[tf.Tensor]:
-
-            c = x_inputs.shape[-1]
-
-            random_crop_fn = partial(one_crop_random, size=size)
-            outputs = tf.map_fn(random_crop_fn, tf.concat((x_inputs, y_inputs), axis=-1))  
-
-            x_inputs, y_inputs = outputs[..., :c], outputs[..., c:]  
-
-            return (x_inputs, y_inputs)
-
-        super().__init__(crop)
-
-
-class Normalize(Preprocess):
-    """Normalizes first input"""
-    def __init__(self):
-
-        def normalize(
-            x_inputs: tf.Tensor,
-            y_inputs: tf.Tensor=None
-        ) -> Tuple[tf.Tensor, tf.Tensor]:
-
-            means = tf.reduce_mean(x_inputs, x_inputs.shape[1:], keepdims=True)
-            stds = tf.math.reduce_std(x_inputs, x_inputs.shape[1:], keepdims=True)
-
-            x_inputs = (x_inputs - means) / stds
-
-            return (x_inputs, y_inputs)
-            
-        super().__init__(normalize)
-
-
 class Resize(Preprocess):
     """Resizes both input"""
     def __init__(self, intermediate_size: Tuple[int] = (240, 320)):
@@ -126,25 +218,6 @@ class Resize(Preprocess):
             return (x_inputs, y_inputs)
 
         super().__init__(resize)
-
-
-class RandomFlip(Preprocess):
-    """Randomly flips both input"""
-    def __init__(self):
-
-        def flip(
-            x_inputs: tf.Tensor,
-            y_inputs: tf.Tensor
-        ) -> Tuple[tf.Tensor]:
-            
-            c = x_inputs.shape[-1]
-            outputs = tf.map_fn(one_random_flip, tf.concat((x_inputs, y_inputs), axis=-1))
-
-            x_inputs, y_inputs = outputs[..., :c], outputs[..., c:]
-
-            return (x_inputs, y_inputs)
-
-        super().__init__(flip)
 
 
 def one_crop_random(
