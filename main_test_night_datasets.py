@@ -69,22 +69,21 @@ with open(os.path.join(results_dir, f"experiment{c}.yaml"), "w") as results_file
     results_file.write(f"\tdatasets_dir: {config['datasets_dir']}\n\n")
 
     results_file.write(f"\tModel config:\n")
-    results_file.write(f"\t- model_name: {config['model_name']}\n")
-    results_file.write(f"\t- image_size: {config['image_size']}\n")
-    results_file.write(f"\t- intermediate_size: {config['intermediate_size']}\n")
-    results_file.write(f"\t- num_classes: {config['num_classes']}\n\n")
+    results_file.write(f"\t\tmodel_name: {config['model_name']}\n")
+    results_file.write(f"\t\timage_size: {config['image_size']}\n")
+    results_file.write(f"\t\tintermediate_size: {config['intermediate_size']}\n")
+    results_file.write(f"\t\tnum_classes: {config['num_classes']}\n\n")
 
     if args.load_pretrained_model:
         results_file.write(f"\tModel pretrained on {config['dataset']}\n\n")
 
     if args.train_on_datasets:
         results_file.write(f"\tTrained on each dataset with config:\n")
-        results_file.write(f"\t- num_epochs: {config['num_epochs']}\n")
-        results_file.write(f"\t- batch_size: {config['batch_size']}\n")
-        results_file.write(f"\t- learning_rate: {config['learning_rate']}\n")
+        results_file.write(f"\t\tnum_epochs: {config['num_epochs']}\n")
+        results_file.write(f"\t\tbatch_size: {config['batch_size']}\n")
+        results_file.write(f"\t\tlearning_rate: {config['learning_rate']}\n")
 
-
-    results_file.write("\n\n")
+    results_file.write("\n\nResults:")
 
 
 for dataset in os.listdir(args.datasets_dir):
@@ -128,7 +127,7 @@ for dataset in os.listdir(args.datasets_dir):
     ).evaluate()
 
     with open(os.path.join(results_dir, f"experiment{c}"), "a") as results_file:
-        results_file.write(f"{dataset}\n")
+        results_file.write(f"\t{dataset}\n")
         for metric, metric_value in zip(metrics, model_results):
-            results_file.write(f"\t{metric.name}: {metric_value}\n")
+            results_file.write(f"\t\t{metric.name}: {metric_value}\n")
         results_file.write("\n")
