@@ -152,7 +152,7 @@ for dataset in os.listdir(args.datasets_dir):
     ).evaluate()
 
     with open(os.path.join(results_dir, f"experiment{c}.yaml"), "a") as results_file:
-        results_file.write(f"\t{dataset}\n")
+        results_file.write(f"\t{dataset}:\n")
         if args.compute_fid:
             results_file.write(f"\t\tFID: {fid_value}\n")
         for metric, metric_value in zip(metrics, model_results):
