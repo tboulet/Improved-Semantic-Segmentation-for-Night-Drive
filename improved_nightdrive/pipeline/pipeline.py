@@ -270,7 +270,7 @@ class Training():
                 callback.at_epoch_end(logs=logs, model=self.model, epoch=epoch)
 
             if save_model_bool:
-                save_model(self.model, save_name+f"at_{epoch}")
+                save_model(self.model, save_name+f"_at_{epoch}")
 
             print(f"Epoch {epoch+1}: ", logs)
 

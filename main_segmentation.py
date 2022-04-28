@@ -9,32 +9,19 @@ import wandb
 from improved_nightdrive.pipeline.callback import InferOnImage, WandbCallback 
 from improved_nightdrive.pipeline.metric import MeanIOU
 from improved_nightdrive.pipeline.pipeline import Training
-from improved_nightdrive.pipeline.preprocess import AddNoise, EqualizeHistogram, FastClahe, GammaProcess, LogProcess, RandomCrop, RandomFlip, Resize, ReClass
+from improved_nightdrive.pipeline.preprocess import (
+    AddNoise, 
+    EqualizeHistogram, 
+    FastClahe, 
+    GammaProcess, 
+    LogProcess, 
+    RandomCrop, 
+    RandomFlip, 
+    Resize, 
+    ReClass
+)
 from improved_nightdrive.segmentation.models import make_model
 
-
-if not os.path.isdir("./results/"):
-    os.mkdir("./results/")
-if not os.path.isdir("./results/sweep/"):
-    os.makedirs("./results/sweep/")
-if not os.path.isdir("./results/sweep/deeplabv3_day_only/"):
-    os.makedirs("./results/sweep/deeplabv3_day_only/models/")
-    os.makedirs("./results/sweep/deeplabv3_day_only/evolution/")
-if not os.path.isdir("./results/sweep/deeplabv3_night_only/"):
-    os.makedirs("./results/sweep/deeplabv3_night_only/evolution/")
-    os.makedirs("./results/sweep/deeplabv3_night_only/models/")
-if not os.path.isdir("./results/sweep/deeplabv3_both/"):
-    os.makedirs("./results/sweep/deeplabv3_both/evolution/")
-    os.makedirs("./results/sweep/deeplabv3_both/models/")
-if not os.path.isdir("./results/sweep/unetmobilenetv2_day_only/"):
-    os.makedirs("./results/sweep/unetmobilenetv2_day_only/evolution/")
-    os.makedirs("./results/sweep/unetmobilenetv2_day_only/models/")
-if not os.path.isdir("./results/sweep/unetmobilenetv2_night_only/"):
-    os.makedirs("./results/sweep/unetmobilenetv2_night_only/evolution/")
-    os.makedirs("./results/sweep/unetmobilenetv2_night_only/models/")
-if not os.path.isdir("./results/sweep/unetmobilenetv2_both/"):
-    os.makedirs("./results/sweep/unetmobilenetv2_both/evolution")
-    os.makedirs("./results/sweep/unetmobilenetv2_both/models/")
 
 correspondance = yaml.safe_load(open("./improved_nightdrive/pipeline/correspondance.yml", "r"))
 new_classes = len(np.unique(list(correspondance.values())))
@@ -54,7 +41,6 @@ default_config = {
 parser = argparse.ArgumentParser()
 parser.add_argument('--model_name', type=str)
 parser.add_argument('--dataset', type=str)
-
 # Image Processing
 parser.add_argument('--image_process', required=False, type=str)
 
@@ -67,6 +53,15 @@ default_config['image_process'] = args.image_process if args.image_process else 
 # wandb.init(config=default_config)
 # config = wandb.config
 config = default_config
+
+train_name = config['model_name'] + '_' + config['dataset']
+if config['image_process'] is not None:
+    train_name += '_'
+    train_name += config['image_process']
+    
+if not os.path.isdir(os.path.join("./results/", train_name)):
+    os.makedirs(os.path.join("./results/", train_name, "evolution/"))
+    os.makedirs(os.path.join("./results/", train_name, "models/"))
 
 model = make_model(config)
 
@@ -91,23 +86,10 @@ elif default_config['image_process'] == 'gamma_process':
 elif default_config['image_process'] == 'log_process':
     preprocesses.append(LogProcess())
 
-
 inference_example_path = "./ressources/examples/"
 
-if config['model_name'] == 'deeplabv3':
-    if config['dataset'] == 'day_only':
-        inference_save_path = "./results/sweep/deeplabv3_day_only/evolution/"
-        model_save_path = "./results/sweep/deeplabv3_day_only/models/deeplabv3_"
-    elif config['dataset'] == 'night_only':
-        inference_save_path = "./results/sweep/deeplabv3_night_only/evolution/"
-        model_save_path = "./results/sweep/deeplabv3_night_only/models/deeplabv3_"
-elif config['model_name'] == 'unetmobilenetv2':
-    if config['dataset'] == 'day_only':
-        inference_save_path = "./results/sweep/unetmobilenetv2_day_only/evolution/"
-        model_save_path = "./results/sweep/unetmobilenetv2_day_only/models/unetmobilenetv2_"
-    elif config['dataset'] == 'night_only':
-        inference_save_path = "./results/sweep/unetmobilenetv2_night_only/evolution/"
-        model_save_path = "./results/sweep/unetmobilenetv2_night_only/models/unetmobilenetv2_"
+inference_save_path = os.path.join("./results/", train_name, "evolution/")
+model_save_path = os.path.join("./results/", train_name, "models/")
 
 callbacks = [
     InferOnImage(
