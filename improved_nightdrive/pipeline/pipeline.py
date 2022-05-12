@@ -201,8 +201,10 @@ class Training:
 
         for epoch in tqdm(range(num_epochs), desc="Epoch training loop"):
 
-            logs = {}
-            prev_valid = 0
+            logs = {
+                "max_train_miou": 0.0,
+                "max_valid_miou": 0.0,
+            }
 
             # Train
             random.shuffle(train_idx)
@@ -240,6 +242,9 @@ class Training:
             for metric in self.metrics:
                 logs["train_" + metric.name] = metric(train_ybatch, train_ypred)
 
+            if logs["train_miou"] > logs["max_train_miou"]:
+                logs["max_train_miou"] = logs["train_miou"]
+
             # Valid
             random.shuffle(valid_idx)
             num_batch = len(valid_idx) // batch_size
@@ -271,13 +276,13 @@ class Training:
             for metric in self.metrics:
                 logs["valid_" + metric.name] = metric(valid_ybatch, valid_ypred)
 
+            if logs["valid_miou"] > logs["max_valid_miou"]:
+                logs["max_valid_miou"] = logs["valid_miou"]
+                if save_model_bool:
+                    save_model(self.model, save_name + f"_at_best_vmiou")
+
             for callback in self.callbacks:
                 callback.at_epoch_end(logs=logs, model=self.model, epoch=epoch)
-
-            if save_model_bool:
-                if logs["valid_miou"] > prev_valid:
-                    save_model(self.model, save_name + f"_at_best_vmiou")
-                    prev_valid = logs["valid_miou"]
             print(f"Epoch {epoch+1}: ", logs)
 
 

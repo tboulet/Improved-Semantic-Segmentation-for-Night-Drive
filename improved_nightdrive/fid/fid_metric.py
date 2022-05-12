@@ -1,97 +1,115 @@
-#File for computing FID (distance metric between real night images distribution and generated night images distribution)
-
+"""FID Metric"""
+from typing import Tuple
 
 import numpy as np
-import tensorflow as tf
 from scipy import linalg
+import tensorflow as tf
 from tqdm import tqdm
-from improved_nightdrive.segmentation.models import UNet_MobileNetV2, get_encoder_unetmobilenetv2, DeeplabV3, get_encoder_deeplabv3
+
+
+from improved_nightdrive.segmentation.models import (
+    DeeplabV3,
+    get_encoder_deeplabv3,
+)
 
 
 class FID:
     def __init__(
         self,
-        encoder = "Inception",
-        batch_size = 8,
-        image_size = (512, 256),
-        path_night_test_images = "ForkGAN/datasets/BDD100K/trainB",    #Path to night images (real)
-        log_filename = "ForkGAN/datasets/BDD100K/fid_logs",
-        ):
-        self.name = "FID"
-        self.ENCODER = encoder
-        self.BATCH_SIZE = batch_size
-        self.IMAGE_SIZE = image_size
-        self.path_night_test_images = path_night_test_images
+        encoder: str = "inception",
+        batch_size: int = 8,
+        image_size: Tuple[int, int] = (512, 256),
+        path_night_real_images: str = "ForkGAN/datasets/BDD100K/trainB",  # Path to night images (real)
+        log_filename: str = "ForkGAN/datasets/BDD100K/fid_logs",
+    ):
+        self.encoder = encoder
+        self.batch_size = batch_size
+        self.image_size = image_size
+
+        self.path_night_real_images = path_night_real_images
         self.log_filename = log_filename
 
-        if self.ENCODER == "Inception":
+        if self.encoder == "inception":
             print("Loading Inception model...")
-            self.net = tf.keras.applications.InceptionV3(include_top=False, 
-                                        weights="imagenet", 
-                                        pooling='avg')
+            self.net = tf.keras.applications.InceptionV3(
+                include_top=False, weights="imagenet", pooling="avg"
+            )
+
+        elif self.encoder == "deeplabv3":
+            print("Loading Deeplabv3 model...")
+            model = DeeplabV3(224, 19)
+            model.load_weights(self.encoder)
+            self.net = get_encoder_deeplabv3(model)
 
         else:
-            print("Loading Segmentation model...")
-            model = DeeplabV3(224, 19)
-            model.load_weights(self.ENCODER)
-            self.net = get_encoder_deeplabv3(model)
-            self.net.summary()
+            raise ValueError(f"{self.encoder} is not a valid encoder name")
 
         self.original_mu, self.original_sigma = self.compute_original_distribution()
 
-    def load_image(self, path):
+    def load_images(self, path: str) -> tf.data.Dataset:
+        """Loads images from directory"""
         images = tf.keras.utils.image_dataset_from_directory(
-        path,
-        label_mode = None,
-        seed=420,
-        image_size=self.IMAGE_SIZE,
-        batch_size=self.BATCH_SIZE)
+            path,
+            label_mode=None,
+            seed=420,
+            image_size=self.image_size,
+            batch_size=self.batch_size,
+        )
         return images
 
-    def pre_process_image(self, imgs):
-        if self.ENCODER == "Inception":
-            imgs = tf.keras.applications.inception_v3.preprocess_input(imgs)
+    def pre_process_images(self, images: tf.Tensor) -> tf.data.Dataset:
+        """Preprocesses images for encoder"""
+        if self.encoder == "inception":
+            images = tf.keras.applications.inception_v3.preprocess_input(images)
         else:
-            imgs = tf.image.resize(imgs, (448, 224))
-            imgs = imgs / 255
-            imgs = tf.image.random_crop(imgs, (imgs.shape[0], 224, 224, 3))
-        return imgs
+            images = tf.image.resize(images, (448, 224))
+            images = images / 255.0
+            images = tf.image.random_crop(images, (images.shape[0], 224, 224, 3))
+        return images
 
-    def load_embedding(self, images):
+    def load_embeddings(self, images: tf.data.Dataset) -> np.ndarray:
+        """Loads the embeddings given an encoder"""
         image_embeddings = []
-        for img in tqdm(images):
-            img = self.pre_process_image(img)
-            embeddings = tf.squeeze(self.net.predict(img))
+        for batch_img in tqdm(images, desc="Loading embeddings... "):
+            batch_img = self.pre_process_images(batch_img)
+            embeddings = self.net.predict(batch_img)
             image_embeddings.extend(embeddings)
         return np.array(image_embeddings)
 
+    # ORIGINAL NIGHT IMAGE DISTRIBUTION
+    def compute_real_distribution(self) -> Tuple[float, float]:
+        """Computes the real distribution"""
+        print("Loading real night images...")
+        night_original_images = self.load_images(self.path_night_real_images)
+        real_embeddings = self.load_embeddings(night_original_images)
+        mu, sigma = real_embeddings.mean(axis=0), np.cov(real_embeddings, rowvar=False)
+        return mu, sigma
 
-    #ORIGINAL NIGHT IMAGE DISTRIBUTION
-    def compute_original_distribution(self):
-        print("Loading original night images...")
-        night_original_images = self.load_image(self.path_night_test_images)
-        real_embeddings = self.load_embedding(night_original_images)
-        mu1, sigma1 = real_embeddings.mean(axis=0), np.cov(real_embeddings, rowvar=False)
-        return mu1, sigma1
+    # FID
+    def __call__(self, path_night_generated_images: str) -> float:
+        """Compute FID score between real and generated night images
 
-    #FID
-    def __call__(self, path_night_generated_images):  
-        '''Compute FID between night images and generated (day 2 night) night images. Possibly save its value into a file.
-        path_night_generated_images : the path to generated images'''
-        print("Computing FID...")  
+        Args:
+            path_night_generated_images (str)
+        Returns:
+            fid_score (float)
+        """
+        print("Computing FID...")
 
-        #GENERATED NIGHT IMAGE DISTRIBUTION
-        night_generated_images = self.load_image(path_night_generated_images)
-        generated_embeddings = self.load_embedding(night_generated_images)
-        mu2, sigma2 = generated_embeddings.mean(axis=0), np.cov(generated_embeddings,  rowvar=False)
+        # GENERATED NIGHT IMAGE DISTRIBUTION
+        night_generated_images = self.load_images(path_night_generated_images)
+        generated_embeddings = self.load_embeddings(night_generated_images)
+        mu2, sigma2 = generated_embeddings.mean(axis=0), np.cov(
+            generated_embeddings, rowvar=False
+        )
         del night_generated_images
         del generated_embeddings
-        
-        #COMPUTE FID
+
+        # COMPUTE FID
         # calculate sum squared difference between means
-        ssdiff = np.sum((self.original_mu - mu2)**2.0)
+        ssdiff = np.sum((self.original_mu - mu2) ** 2.0)
         # calculate sqrt of product between cov
-        covmean = linalg.sqrtm(self.original_sigma.dot(sigma2))
+        covmean = linalg.sqrtm(np.dot(self.original_sigma, sigma2))
         # check and correct imaginary numbers from sqrt
         if np.iscomplexobj(covmean):
             covmean = covmean.real
