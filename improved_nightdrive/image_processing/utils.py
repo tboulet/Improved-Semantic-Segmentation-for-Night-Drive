@@ -1,5 +1,6 @@
 import tensorflow as tf
 import tf_clahe
+import numpy as np
 
 
 @tf.function(experimental_compile=True)  # Enable XLA
@@ -11,14 +12,17 @@ def log_process(img, c=1):
     return c * tf.math.log(img + 1)
 
 
-def gamma_process(img, p=[1, 1, 1], c=1):
+def gamma_process(img, p=[1, 1, 1]):
     if type(p) != list:
         p = [p]*3
-    
-    r = c * img[:, :, 0]**p[0]
-    g = c * img[:, :, 1]**p[1]
-    b = c * img[:, :, 2]**p[2]
-    return tf.stack((r, g, b), axis=-1)
+
+    r = img[..., 0]**p[0]
+    g = img[..., 1]**p[1]
+    b = img[..., 2]**p[2]
+
+    output = tf.stack([r, g, b], axis=-1)
+
+    return output
 
 
 def lab_gamma_process(img, p=1, c=100):
