@@ -1,6 +1,6 @@
 
 from functools import partial
-from typing import Tuple
+from typing import List, Tuple
 import yaml
 
 import numpy as np
@@ -37,16 +37,19 @@ class Preprocess():
 
 class AddNoise(Preprocess):
     """Adds noise to first input"""
-    def __init__(self):
+    def __init__(self, noise_factor):
+
+        self.noise_factor = noise_factor
 
         def add_noise(
             x_inputs: tf.Tensor, 
             y_inputs: tf.Tensor=None
         ) -> Tuple[tf.Tensor, tf.Tensor]:
 
-            noise_map = tf.random.normal(shape=x_inputs.shape)
+            noise_map = tf.random.normal(shape=x_inputs.shape) * self.noise_factor
+            x_inputs = tf.clip_by_value(x_inputs + noise_map, 0., 1.)
 
-            return (x_inputs + noise_map, y_inputs)
+            return (x_inputs, y_inputs)
 
         super().__init__(add_noise)
 
@@ -85,15 +88,16 @@ class FastClahe(Preprocess):
 
 class GammaProcess(Preprocess):
     """Apply gamma process to first input"""
-    def __init__(self) -> None:
+    def __init__(self, p: List[float] = [1., 1., 1.]) -> None:
 
         def func(
             x_inputs: tf.Tensor,
             y_inputs: tf.Tensor=None,
         ) -> Tuple[tf.Tensor, tf.Tensor]:
 
-            x_inputs = tf.map_fn(gamma_process, x_inputs)
-
+            _gamma_process = partial(gamma_process, p=p)
+            x_inputs = tf.map_fn(_gamma_process, x_inputs)
+            
             return (x_inputs, y_inputs)
 
         super().__init__(func)
