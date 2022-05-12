@@ -276,10 +276,10 @@ class Training:
             for metric in self.metrics:
                 logs["valid_" + metric.name] = metric(valid_ybatch, valid_ypred)
 
-            if save_model_bool:
-                if logs["valid_miou"] > logs["max_valid_miou"]:
+            if logs["valid_miou"] > logs["max_valid_miou"]:
+                logs["max_valid_miou"] = logs["valid_miou"]
+                if save_model_bool:
                     save_model(self.model, save_name + f"_at_best_vmiou")
-                    logs["max_valid_miou"] = logs["valid_miou"]
 
             for callback in self.callbacks:
                 callback.at_epoch_end(logs=logs, model=self.model, epoch=epoch)
