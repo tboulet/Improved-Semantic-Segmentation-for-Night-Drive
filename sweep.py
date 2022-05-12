@@ -11,7 +11,7 @@ from improved_nightdrive.pipeline.metric import MeanIOU
 from improved_nightdrive.pipeline.pipeline import Training
 from improved_nightdrive.pipeline.preprocess import (
     AddNoise,
-    EqualizeHistogram,  # broken
+    EqualizeHistogram,  # works
     FastClahe,  # works
     GammaProcess,  # works
     LogProcess,  # works
@@ -96,7 +96,7 @@ if __name__ == "__main__":
 
     n_runs = len(sweeps)
 
-    for i in range(start, min(n_runs, start + 32)):
+    for i in range(start, min(n_runs, start + 40)):
         config = sweeps[i]
 
         wandb.init(config=config, entity="raffael", project="improved-nightdrive")
