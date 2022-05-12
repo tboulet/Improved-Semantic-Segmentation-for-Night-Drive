@@ -122,13 +122,14 @@ class Normalize(Preprocess):
 class LogProcess(Preprocess):
     """Apply log process to first input"""
 
-    def __init__(self) -> None:
+    def __init__(self, c: float) -> None:
         def func(
             x_inputs: tf.Tensor,
             y_inputs: tf.Tensor = None,
         ) -> Tuple[tf.Tensor, tf.Tensor]:
 
-            x_inputs = tf.map_fn(log_process, x_inputs)
+            _log_process = partial(log_process, c=c)
+            x_inputs = tf.map_fn(_log_process, x_inputs)
 
             return (x_inputs, y_inputs)
 
@@ -246,6 +247,7 @@ def one_random_flip(input: tf.Tensor) -> tf.Tensor:
     return input
 
 
+# == Image processing == #
 @tf.function(experimental_compile=True)  # Enable XLA
 def fast_clahe(img: tf.Tensor) -> tf.Tensor:
     return tf_clahe.clahe(img, gpu_optimized=True)

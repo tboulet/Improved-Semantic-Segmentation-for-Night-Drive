@@ -1,4 +1,3 @@
-
 import tensorflow as tf
 
 from tensorflow.keras import Input
@@ -8,49 +7,62 @@ from tensorflow.keras.layers import (
     AveragePooling2D,
     BatchNormalization,
     Concatenate,
-    Conv2D, 
-    Conv2DTranspose, 
+    Conv2D,
+    Conv2DTranspose,
     Dropout,
-    LeakyReLU, 
-    UpSampling2D, 
+    LeakyReLU,
+    UpSampling2D,
 )
 from tensorflow.keras.models import Model
 from tensorflow_addons.layers import InstanceNormalization
 
 
-### Mobilenet V2 ###
+# == Mobilenet V2 == #
+
 
 class PreTrainedMobileUnetv2(Model):
-
     def __init__(self, num_classes):
         super().__init__()
 
         self.num_classes = num_classes
 
-        self.encoder = MobileNetV2((224,224,3), include_top=False)
+        self.encoder = MobileNetV2((224, 224, 3), include_top=False)
 
-        self.convt1 = Conv2DTranspose(576, (3,3), (2,2), padding='SAME')
-        self.conv1 = Conv2D(576, (3,3), (1,1), padding='SAME')
+        self.convt1 = Conv2DTranspose(576, (3, 3), (2, 2), padding="SAME")
+        self.conv1 = Conv2D(576, (3, 3), (1, 1), padding="SAME")
 
-        self.convt2 = Conv2DTranspose(192, (3,3), (2,2), padding='SAME')
-        self.conv2 = Conv2D(192, (3,3), (1,1), padding='SAME')
+        self.convt2 = Conv2DTranspose(192, (3, 3), (2, 2), padding="SAME")
+        self.conv2 = Conv2D(192, (3, 3), (1, 1), padding="SAME")
 
-        self.convt3 = Conv2DTranspose(144, (3,3), (2,2), padding='SAME')
-        self.conv3 = Conv2D(144, (3,3), (1,1), padding='SAME')
+        self.convt3 = Conv2DTranspose(144, (3, 3), (2, 2), padding="SAME")
+        self.conv3 = Conv2D(144, (3, 3), (1, 1), padding="SAME")
 
-        self.convt4 = Conv2DTranspose(96, (3,3), (2,2), padding='SAME')
-        self.conv4 = Conv2D(96, (3,3), (1,1), padding='SAME')
+        self.convt4 = Conv2DTranspose(96, (3, 3), (2, 2), padding="SAME")
+        self.conv4 = Conv2D(96, (3, 3), (1, 1), padding="SAME")
 
-        self.convt5 = Conv2DTranspose(32, (3,3), (2,2), padding='SAME')
-        self.conv5 = Conv2D(self.num_classes, (3,3), (1,1), padding='SAME', kernel_initializer=tf.keras.initializers.Zeros())
+        self.convt5 = Conv2DTranspose(32, (3, 3), (2, 2), padding="SAME")
+        self.conv5 = Conv2D(
+            self.num_classes,
+            (3, 3),
+            (1, 1),
+            padding="SAME",
+            kernel_initializer=tf.keras.initializers.Zeros(),
+        )
 
-        self.bridge_layer_names = ['block_1_expand_relu', 'block_3_expand_relu', 'block_6_expand_relu', 'block_13_expand_relu']
- 
+        self.bridge_layer_names = [
+            "block_1_expand_relu",
+            "block_3_expand_relu",
+            "block_6_expand_relu",
+            "block_13_expand_relu",
+        ]
 
     def __call__(self, input_tensor: tf.Tensor, training=True) -> tf.Tensor:
 
         encoded = self.encoder(input_tensor, training=True)
-        bridges = [self.encoder.get_layer(layer_name).output for layer_name in self.bridge_layer_names]
+        bridges = [
+            self.encoder.get_layer(layer_name).output
+            for layer_name in self.bridge_layer_names
+        ]
 
         up1 = self.convt1(encoded)
         up1 = tf.concat([up1, bridges[-1]], axis=-1)
@@ -73,7 +85,6 @@ class PreTrainedMobileUnetv2(Model):
 
         return up5
 
-
     def call(self, input_tensor, training=True):
         return self.__call__(input_tensor, training=True)
 
@@ -81,21 +92,19 @@ class PreTrainedMobileUnetv2(Model):
 def UNet_MobileNetV2(image_size, num_classes) -> Model:
 
     encoder = MobileNetV2(
-        input_shape=(image_size,image_size,3), 
-        include_top=False,
-        weights='imagenet'
+        input_shape=(image_size, image_size, 3), include_top=False, weights="imagenet"
     )
     bridge_layers = [
-        'block_1_expand_relu',
-        'block_3_expand_relu',
-        'block_6_expand_relu', 
-        'block_13_expand_relu',
-        'block_16_project',
+        "block_1_expand_relu",
+        "block_3_expand_relu",
+        "block_6_expand_relu",
+        "block_13_expand_relu",
+        "block_16_project",
     ]
     encoder_outputs = [encoder.get_layer(layer).output for layer in bridge_layers]
     down = Model(inputs=encoder.input, outputs=encoder_outputs)
 
-    input = Input(shape=(image_size,image_size,3))
+    input = Input(shape=(image_size, image_size, 3))
     bridges = down(input)
     x = bridges[-1]
     bridges = reversed(bridges[:-1])
@@ -117,7 +126,8 @@ def UNet_MobileNetV2(image_size, num_classes) -> Model:
     return Model(input, x)
 
 
-### DeepLabv3 ###
+# == DeepLabv3 == #
+
 
 def convolution_block(
     block_input,
@@ -144,7 +154,8 @@ def DilatedSpatialPyramidPooling(dspp_input):
     x = AveragePooling2D(pool_size=(dims[-3], dims[-2]))(dspp_input)
     x = convolution_block(x, kernel_size=1, use_bias=True)
     out_pool = UpSampling2D(
-        size=(dims[-3] // x.shape[1], dims[-2] // x.shape[2]), interpolation="bilinear",
+        size=(dims[-3] // x.shape[1], dims[-2] // x.shape[2]),
+        interpolation="bilinear",
     )(x)
 
     out_1 = convolution_block(dspp_input, kernel_size=1, dilation_rate=1)
@@ -159,9 +170,7 @@ def DilatedSpatialPyramidPooling(dspp_input):
 
 def DeeplabV3(image_size, num_classes) -> Model:
     model_input = Input(shape=(image_size, image_size, 3))
-    resnet50 = ResNet50(
-        weights="imagenet", include_top=False, input_tensor=model_input
-    )
+    resnet50 = ResNet50(weights="imagenet", include_top=False, input_tensor=model_input)
     x = resnet50.get_layer("conv4_block6_2_relu").output
     x = DilatedSpatialPyramidPooling(x)
 
@@ -179,39 +188,33 @@ def DeeplabV3(image_size, num_classes) -> Model:
         size=(image_size // x.shape[1], image_size // x.shape[2]),
         interpolation="bilinear",
     )(x)
-    model_output = Conv2D(num_classes, kernel_size=(1, 1), padding="same", activation='softmax')(x)
+    model_output = Conv2D(
+        num_classes, kernel_size=(1, 1), padding="same", activation="softmax"
+    )(x)
     return Model(inputs=model_input, outputs=model_output)
 
 
 def make_model(config: dict) -> Model:
     """Gets a model from the run config"""
-    model_name = config['model_name']
-    image_size = config['image_size']
-    num_classes = config['num_classes']
-    new_classes = config['new_classes']
+    model_name = config["model_name"]
+    image_size = config["image_size"]
+    num_classes = config["num_classes"]
+    new_classes = config["new_classes"]
 
     if new_classes > 0:
         num_classes = new_classes
 
-    if model_name == 'deeplabv3':
-        return DeeplabV3(
-            image_size=image_size, 
-            num_classes=num_classes
-        )
-    elif model_name == 'unetmobilenetv2':
-        return UNet_MobileNetV2(
-            image_size=image_size, 
-            num_classes=num_classes
-        )
+    if model_name == "deeplabv3":
+        return DeeplabV3(image_size=image_size, num_classes=num_classes)
+    elif model_name == "unetmobilenetv2":
+        return UNet_MobileNetV2(image_size=image_size, num_classes=num_classes)
     else:
         raise NotImplementedError(model_name + " is not implemented !")
 
 
 def get_encoder_unetmobilenetv2(model: Model):
-    return Model(inputs=model.input, outputs=model.get_layer('conv2d').output)
+    return Model(inputs=model.input, outputs=model.get_layer("conv2d").output)
 
 
 def get_encoder_deeplabv3(model: Model):
-    return Model(inputs=model.input, outputs=model.get_layer('conv2d').output)
-
-    
+    return Model(inputs=model.input, outputs=model.get_layer("conv2d").output)
