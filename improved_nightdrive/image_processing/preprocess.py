@@ -1,21 +1,17 @@
 """All image preprocesses"""
+from typing import List
 
 import tensorflow as tf
-import tf_clahe
-import numpy as np
 from tensorflow_addons.image import equalize
+import tf_clahe
 
 
 @tf.function(experimental_compile=True)  # Enable XLA
-def fast_clahe(img):
+def fast_clahe(img: tf.Tensor) -> tf.Tensor:
     return tf_clahe.clahe(img, gpu_optimized=True)
 
 
-def log_process(img, c=1):
-    return c * tf.math.log(img + 1)
-
-
-def gamma_process(img, p=[1, 1, 1]):
+def gamma_process(img: tf.Tensor, p: List[int] = [1, 1, 1]) -> tf.Tensor:
     if type(p) != list:
         p = [p] * 3
 
@@ -28,36 +24,9 @@ def gamma_process(img, p=[1, 1, 1]):
     return output
 
 
-def hist_eq(tensor):
-    """
-    :param tensor: batch ou image de dtype = tf.float32, compris dans 0 et 255
-    """
-    return equalize(tensor * 255) / 255
+def hist_eq(img: tf.Tensor) -> tf.Tensor:
+    return equalize(img * 255) / 255
 
 
-def lab_gamma_process(img, p=1, c=100):
-
-    L = c * (img[:, :, 0] / c) ** p
-    a = img[:, :, 1]
-    b = img[:, :, 2]
-    return tf.stack((L, a, b), axis=-1)
-
-
-def lab_hist(image):
-    values_range = tf.constant([0.0, 100.0], dtype=tf.float32)
-    histogram = tf.histogram_fixed_width(image, values_range, 100)
-    cdf = tf.cumsum(histogram)
-    cdf_min = cdf[tf.reduce_min(tf.where(tf.greater(cdf, 0)))]
-
-    img_shape = tf.shape(image)
-    pix_cnt = img_shape[-3] * img_shape[-2]
-    px_map = tf.round(
-        tf.cast(cdf - cdf_min, dtype=tf.float32)
-        * 100.0
-        / tf.cast(pix_cnt - 1, dtype=tf.float32)
-    )
-    px_map = tf.cast(px_map, tf.uint8)
-    image = tf.clip_by_value(image, 0, 99)
-
-    eq_hist = tf.expand_dims(tf.gather_nd(px_map, tf.cast(image, tf.int32)), 2)
-    return tf.squeeze(eq_hist)
+def log_process(img: tf.Tensor, c: float = 1.0) -> tf.Tensor:
+    return c * tf.math.log(img + 1)
