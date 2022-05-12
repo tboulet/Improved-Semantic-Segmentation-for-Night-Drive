@@ -1,0 +1,19 @@
+# Experiment 2
+
+Config:
+ datasets_dir: ForkGAN/Processed_datasets/images
+
+ Model config:
+  model_name: unetmobilenetv2
+  image_size: 224
+  intermediate_size: (225, 400)
+  num_classes: 19
+
+#  Model pretrained on day_only
+
+ FID encoder: Inception
+
+Results:
+ cyclegan.model-120002:
+  FID: 32.87477701036821
+  miou: 0.1446239992898271
