@@ -199,12 +199,11 @@ class Training:
         self.valid_idx = valid_idx = idx[int(len(idx) * 0.8) : int(len(idx) * 0.9)]
         self.test_idx = test_idx = idx[int(len(idx) * 0.9) :]
 
+        logs = {
+            "max_train_miou": 0.0,
+            "max_valid_miou": 0.0,
+        }
         for epoch in tqdm(range(num_epochs), desc="Epoch training loop"):
-
-            logs = {
-                "max_train_miou": 0.0,
-                "max_valid_miou": 0.0,
-            }
 
             # Train
             random.shuffle(train_idx)
@@ -243,7 +242,7 @@ class Training:
                 logs["train_" + metric.name] = metric(train_ybatch, train_ypred)
 
             if logs["train_miou"] > logs["max_train_miou"]:
-                logs["max_train_miou"] = logs["train_miou"]
+                logs["max_train_miou"] = float(logs["train_miou"])
 
             # Valid
             random.shuffle(valid_idx)
@@ -277,7 +276,7 @@ class Training:
                 logs["valid_" + metric.name] = metric(valid_ybatch, valid_ypred)
 
             if logs["valid_miou"] > logs["max_valid_miou"]:
-                logs["max_valid_miou"] = logs["valid_miou"]
+                logs["max_valid_miou"] = float(logs["valid_miou"])
                 if save_model_bool:
                     save_model(self.model, save_name + f"_at_best_vmiou")
 
