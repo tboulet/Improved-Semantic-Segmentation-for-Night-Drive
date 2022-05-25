@@ -21,7 +21,7 @@ correspondance = yaml.safe_load(
     open("./improved_nightdrive/pipeline/correspondance.yml", "r")
 )
 
-# TODO@raffaelbdl: Possibly inusable
+
 class Evaluation:
     """Evaluation pipeline of a trained model
 
