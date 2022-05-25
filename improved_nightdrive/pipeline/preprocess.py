@@ -100,6 +100,24 @@ class GammaProcess(Preprocess):
 
         super().__init__(func)
 
+    def masked_func(
+        self, x_inputs: tf.Tensor, p: List[List[float]], y_preds: tf.Tensor
+    ):
+        """
+        Args:
+            x_inputs (tf.Tensor): [B, H, W, 3]
+            p (List[float]): [n_class, 3]
+            y_preds (tf.Tensor): [B, H, W, n_class]
+        Returns:
+            A list of `n_class` modified images with process applied per mask
+        """
+        x_outputs = []
+        for i, _p in enumerate(p):
+            x_out = gamma_process(x_inputs, _p)
+            x_out = tf.where(y_preds[..., i, None] > 0.0, x_out, x_inputs)
+            x_outputs.append(x_out)
+        return x_outputs
+
 
 class Normalize(Preprocess):
     """Normalizes first input"""
