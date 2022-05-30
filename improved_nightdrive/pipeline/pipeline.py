@@ -15,7 +15,7 @@ from tqdm import tqdm
 from improved_nightdrive.pipeline.metric import Metric
 from improved_nightdrive.pipeline.preprocess import Resize
 from improved_nightdrive.segmentation.losses import softmax_weighted_cce
-)
+
 
 if TYPE_CHECKING:
     from improved_nightdrive.pipeline.callback import Callback
