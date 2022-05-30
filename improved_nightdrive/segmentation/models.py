@@ -126,6 +126,47 @@ def UNet_MobileNetV2(image_size, num_classes) -> Model:
     return Model(input, x)
 
 
+def UNet_MobileNetV2_big(image_size, num_classes) -> Model:
+
+    encoder = MobileNetV2(
+        input_shape=(image_size, image_size, 3), include_top=False, weights="imagenet"
+    )
+    bridge_layers = [
+        "block_1_expand_relu",
+        "block_3_expand_relu",
+        "block_6_expand_relu",
+        "block_13_expand_relu",
+        "block_16_project",
+    ]
+    encoder_outputs = [encoder.get_layer(layer).output for layer in bridge_layers]
+    down = Model(inputs=encoder.input, outputs=encoder_outputs)
+
+    input = Input(shape=(image_size, image_size, 3))
+    bridges = down(input)
+    x = bridges[-1]
+    bridges = reversed(bridges[:-1])
+
+    filters_up = [512, 256, 128, 64]
+    i = 0
+    for bridge in bridges:
+        x = UpSampling2D()(x)
+        x = Conv2D(filters_up[i], 3, padding="SAME")(x)
+        x = InstanceNormalization()(x)
+        x = LeakyReLU(0.2)(x)
+        x = Dropout(0.5)(x)
+        x = Conv2D(filters_up[i], 3, padding="SAME")(x)
+        x = InstanceNormalization()(x)
+        x = LeakyReLU(0.2)(x)
+        x = Dropout(0.5)(x)
+        b = Conv2D(filters_up[i], 1, padding="SAME")(bridge)
+        x = tf.concat([b, x], axis=-1)
+        i += 1
+    x = UpSampling2D()(x)
+    x = Conv2D(num_classes, 1, activation="softmax")(x)
+
+    return Model(input, x)
+
+
 # == DeepLabv3 == #
 
 
@@ -208,6 +249,8 @@ def make_model(config: dict) -> Model:
         return DeeplabV3(image_size=image_size, num_classes=num_classes)
     elif model_name == "unetmobilenetv2":
         return UNet_MobileNetV2(image_size=image_size, num_classes=num_classes)
+    elif model_name == "unetmobilenetv2_big":
+        return UNet_MobileNetV2_big(image_size=image_size, num_classes=num_classes)
     else:
         raise NotImplementedError(model_name + " is not implemented !")
 
