@@ -2,9 +2,7 @@ from typing import List
 
 import gradio as gr
 import numpy as np
-import tensorflow as tf
 
-from improved_nightdrive.pipeline.metric import ClassMeanIOU
 from improved_nightdrive.pipeline.lighting import (
     apply_gamma_map,
     apply_gaussian_blur,
@@ -73,7 +71,7 @@ def lighting_gradio(
     return modified_input.numpy()
 
 
-def main():
+def launch_app():
     demo = gr.Interface(
         lighting_gradio,
         [

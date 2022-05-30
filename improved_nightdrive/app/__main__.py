@@ -1,3 +1,3 @@
-from improved_nightdrive.app.lighting_gradio import main
+from improved_nightdrive.app.lighting_gradio import launch_app
 
-main()
+launch_app()
