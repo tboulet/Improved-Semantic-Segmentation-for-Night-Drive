@@ -6,7 +6,7 @@ import yaml
 
 import numpy as np
 import tensorflow as tf
-from tensorflow_addons.image import equalize
+from tensorflow_addons.image import equalize, gaussian_filter2d
 import tf_clahe
 
 
@@ -31,6 +31,23 @@ class Preprocess:
 
     def __call__(self, *args) -> Tuple[tf.Tensor, tf.Tensor]:
         return self.func(*args)
+
+
+class GaussianBlur(Preprocess):
+    """Blur first input"""
+
+    def __init__(self, filter_shape=3, sigma=1):
+        self.filter_shape = filter_shape
+        self.sigma = sigma
+
+        def func(x, y):
+            return self.blur(x), y
+
+        super().__init__(func)
+
+    def blur(self, x: tf.Tensor) -> tf.Tensor:
+        """Blur image"""
+        return gaussian_filter2d(x, self.filter_shape, self.sigma)
 
 
 class AddNoise(Preprocess):
@@ -250,8 +267,8 @@ def one_crop_random(input: tf.Tensor, size: int) -> tf.Tensor:
     )
 
     cropped_input = input[
-        random_upper_left_y : random_upper_left_y + size,
-        random_upper_left_x : random_upper_left_x + size,
+        random_upper_left_y: random_upper_left_y + size,
+        random_upper_left_x: random_upper_left_x + size,
     ]
 
     return cropped_input
