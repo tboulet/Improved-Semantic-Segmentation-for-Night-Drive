@@ -1,3 +1,4 @@
+import functools
 import os
 import random
 from typing import List, Optional, Tuple, TYPE_CHECKING
@@ -12,6 +13,9 @@ from tensorflow.keras.losses import CategoricalCrossentropy, MeanSquaredError
 from tqdm import tqdm
 
 from improved_nightdrive.pipeline.metric import Metric
+from improved_nightdrive.pipeline.preprocess import Resize
+from improved_nightdrive.segmentation.losses import softmax_weighted_cce
+)
 
 if TYPE_CHECKING:
     from improved_nightdrive.pipeline.callback import Callback
@@ -171,6 +175,10 @@ class Training:
             self.loss = CategoricalCrossentropy()
         elif loss == "mse":
             self.loss = MeanSquaredError()
+        elif loss == "wcce":
+            self.loss = functools.partial(
+                softmax_weighted_cce, weights=[1.0, 2.0, 10.0, 13.0, 5.0]
+            )
         else:
             warn(loss + " is not implemented, cce used by default")
             self.loss = CategoricalCrossentropy()
@@ -308,3 +316,33 @@ def load_batch(
     y = tf.one_hot(tf.constant(np.array(ys)), num_classes, axis=-1, dtype=tf.float32)
 
     return x, y
+
+
+def full_prediction(
+    input: tf.Tensor, config: dict, model: Model, preprocess: List["Preprocess"]
+):
+    """no batch"""
+    x = np.expand_dims(input, axis=0) / 255.0
+    y = np.ones((x.shape[:-1]))
+    y = tf.one_hot(y, config["num_classes"], axis=-1, dtype=tf.float32)
+
+    x, y = Resize(config["intermediate_size"]).func(x, y)
+    _x = x
+    for p in preprocess:
+        _x, y = p.func(_x, y)
+    if x.shape[2] > config["image_size"]:
+        xs = [
+            _x[:, : config["image_size"], : config["image_size"]],
+            _x[:, : config["image_size"], x.shape[2] - config["image_size"] :],
+        ]
+    else:
+        xs = [_x]
+
+    xs = tf.concat(xs, axis=0)
+
+    preds = model.predict(xs)
+
+    pred = tf.concat(
+        [preds[0], preds[1][:, : x.shape[2] - config["image_size"]]], axis=1
+    )
+    return pred, x[0, : config["image_size"]]

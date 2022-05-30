@@ -1,8 +1,9 @@
 import tensorflow as tf
+from tensorflow.keras.losses import CategoricalCrossentropy
 
 
 def softmax_weighted_cce(
-    targets: tf.Tensor, predictions_logits: tf.Tensor, weights: tf.Tensor
+    predictions_logits: tf.Tensor, targets: tf.Tensor, weights: tf.Tensor
 ) -> tf.Tensor:
     """Computes the weight categorical crossentropy
 
