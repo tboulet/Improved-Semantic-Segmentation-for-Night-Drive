@@ -1,5 +1,4 @@
 """Scripts to apply local image process"""
-from math import gamma
 from typing import List, Optional
 
 import matplotlib.pyplot as plt
