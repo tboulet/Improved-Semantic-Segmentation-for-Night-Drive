@@ -1,7 +1,10 @@
 from absl import app, flags
 from datetime import datetime
 import os
+import sys
 import yaml
+
+sys.path.insert(1, os.path.abspath(os.path.curdir))
 
 import numpy as np
 
@@ -61,7 +64,7 @@ def main(_):
         "log_factor": FLAGS.log_factor,
     }
 
-    train_name = config["model_name"] + "_" + config["dataset"]
+    train_name = config["model_name"]
     if config["image_process"] is not None:
         train_name += "_"
         train_name += config["image_process"]

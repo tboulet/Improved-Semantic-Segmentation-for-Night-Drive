@@ -1,4 +1,8 @@
 from absl import app, flags
+import os
+import sys
+
+sys.path.insert(1, os.path.abspath(os.path.curdir))
 
 from improved_nightdrive.segmentation.analyse_dataset import class_proportion
 
