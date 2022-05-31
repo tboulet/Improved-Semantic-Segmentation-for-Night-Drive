@@ -30,21 +30,13 @@ flags.DEFINE_multi_integer("intermediate_size", (225, 400), "Size before croppin
 flags.DEFINE_integer("n_epochs", 50, "Number of epochs")
 flags.DEFINE_integer("batch_size", 10, "Size of the batches")
 flags.DEFINE_float("learning_rate", 5e-4, "Learning rate")
-flags.DEFINE_string("dataset", "night_only", "Dataset")
+flags.DEFINE_string("dataset_x_path", "./BDD100K/bdd100k/day/images/", "Dataset images")
+flags.DEFINE_string("dataset_y_path", "./BDD100K/bdd100k/day/labels/", "Dataset images")
 flags.DEFINE_float("noise_factor", 1e-2, "Noise factor for image augmentation")
 flags.DEFINE_string("image_process", "none", "Image process for image augmentation")
 flags.DEFINE_float("gamma_factor", 0.5, "Arg for gamma process")
 flags.DEFINE_float("log_factor", 0.5, "Arg for log process")
 FLAGS = flags.FLAGS
-
-x_dir_path_day = "./BDD100K/bdd100k/day/images/"
-y_dir_path_day = "./BDD100K/bdd100k/day/labels/"
-
-x_dir_path_night = "/media/raffaelbdl/T7/BDD100K/bdd100k/night/images/"
-y_dir_path_night = "/media/raffaelbdl/T7/BDD100K/bdd100k/night/labels/"
-
-x_dir_path_both = "./BDD100K/bdd100k/images/10k/train/"
-y_dir_path_both = "./BDD100K/bdd100k/labels/sem_seg/colormaps/train/"
 
 
 def main(_):
@@ -61,7 +53,6 @@ def main(_):
         "num_epochs": FLAGS.n_epochs,
         "batch_size": FLAGS.batch_size,
         "learning_rate": FLAGS.learning_rate,
-        "dataset": FLAGS.dataset,
         "num_classes": 19,
         "new_classes": new_classes,
         "noise_factor": FLAGS.noise_factor,
@@ -121,27 +112,15 @@ def main(_):
 
     model_save_path = os.path.join("./results/", train_name, "models/")
 
-    callbacks = []
-
-    if config["dataset"] == "day_only":
-        x_dir_path = x_dir_path_day
-        y_dir_path = y_dir_path_day
-    elif config["dataset"] == "night_only":
-        x_dir_path = x_dir_path_night
-        y_dir_path = y_dir_path_night
-    elif config["dataset"] == "both":
-        x_dir_path = x_dir_path_both
-        y_dir_path = y_dir_path_both
-
     T = Training(
         model=model,
         num_classes=config["num_classes"],
         loss="wcce",
-        x_dir_path=x_dir_path,
-        y_dir_path=y_dir_path,
+        x_dir_path=FLAGS.dataset_x_path,
+        y_dir_path=FLAGS.dataset_y_path,
         metrics=metrics,
         preprocesses=preprocesses,
-        callbacks=callbacks,
+        callbacks=[],
     )
 
     T.train(
