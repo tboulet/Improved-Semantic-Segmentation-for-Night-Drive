@@ -1,6 +1,5 @@
 """Contains all the preprocesses"""
 from functools import partial
-from math import gamma
 from typing import List, Tuple
 import yaml
 
@@ -31,20 +30,6 @@ class Preprocess:
 
     def __call__(self, *args) -> Tuple[tf.Tensor, tf.Tensor]:
         return self.func(*args)
-
-
-class GaussianBlur(Preprocess):
-    """Blur first input"""
-
-    def __init__(self, filter_shape=3, sigma=1):
-        self.filter_shape = filter_shape
-        self.sigma = sigma
-
-        super().__init__(lambda x, y: (self.blur(x), y))
-
-    def blur(self, x: tf.Tensor) -> tf.Tensor:
-        """Blur image"""
-        return gaussian_filter2d(x, self.filter_shape, self.sigma)
 
 
 class AddNoise(Preprocess):
@@ -83,7 +68,7 @@ class FastClahe(Preprocess):
         super().__init__(lambda x, y: (self.apply_fast_clahe(x), y))
 
     def apply_fast_clahe(self, x: tf.Tensor) -> tf.Tensor:
-        "Apply fast clahe"
+        """Apply fast clahe"""
         return tf.map_fn(fast_clahe, x)
 
 
@@ -96,23 +81,23 @@ class GammaProcess(Preprocess):
         super().__init__(lambda x, y: (self.apply_gamma(x, self.p), y))
 
     def apply_gamma(self, x: tf.Tensor, p: List[float]) -> tf.Tensor:
-        "Apply gamma"
+        """Apply gamma"""
         func = partial(gamma_process, p=p)
         return tf.map_fn(func, x)
 
 
-class Normalize(Preprocess):
-    """Normalize first input"""
+class GaussianBlur(Preprocess):
+    """Blur first input"""
 
-    def __init__(self):
+    def __init__(self, filter_shape=3, sigma=1):
+        self.filter_shape = filter_shape
+        self.sigma = sigma
 
-        super().__init__(lambda x, y: (self.normalize(x), y))
+        super().__init__(lambda x, y: (self.blur(x), y))
 
-    def normalize(self, x: tf.Tensor) -> tf.Tensor:
-        "Normalize image"
-        means = tf.reduce_mean(x, x.shape[1:], keepdims=True)
-        stds = tf.math.reduce_std(x, x.shape[1:], keepdims=True)
-        return (x - means) / stds
+    def blur(self, x: tf.Tensor) -> tf.Tensor:
+        """Blur image"""
+        return gaussian_filter2d(x, self.filter_shape, self.sigma)
 
 
 class LogProcess(Preprocess):
@@ -124,12 +109,27 @@ class LogProcess(Preprocess):
         super().__init__(lambda x, y: (self.apply_log(x, self.c), y))
 
     def apply_log(self, x: tf.Tensor, c: float) -> tf.Tensor:
+        """Apply log process"""
         func = partial(log_process, c=c)
         return tf.map_fn(func, x)
 
 
+class Normalize(Preprocess):
+    """Normalize first input"""
+
+    def __init__(self):
+
+        super().__init__(lambda x, y: (self.normalize(x), y))
+
+    def normalize(self, x: tf.Tensor) -> tf.Tensor:
+        """Normalize image"""
+        means = tf.reduce_mean(x, x.shape[1:], keepdims=True)
+        stds = tf.math.reduce_std(x, x.shape[1:], keepdims=True)
+        return (x - means) / stds
+
+
 class RandomCrop(Preprocess):
-    """Crops randomly both inputs"""
+    """Crop randomly both inputs"""
 
     def __init__(self, size: int):
         self.size = size
@@ -139,6 +139,7 @@ class RandomCrop(Preprocess):
     def crop(
         self, x_inputs: tf.Tensor, y_inputs: tf.Tensor, size: int
     ) -> Tuple[tf.Tensor]:
+        """Crop inputs"""
 
         c = x_inputs.shape[-1]
 
@@ -151,13 +152,14 @@ class RandomCrop(Preprocess):
 
 
 class RandomFlip(Preprocess):
-    """Randomly flips both input"""
+    """Randomly flip both input"""
 
     def __init__(self):
 
         super().__init__(self.flip)
 
     def flip(self, x_inputs: tf.Tensor, y_inputs: tf.Tensor) -> Tuple[tf.Tensor]:
+        """Flip inputs"""
 
         c = x_inputs.shape[-1]
         outputs = tf.map_fn(one_random_flip, tf.concat((x_inputs, y_inputs), axis=-1))
@@ -168,7 +170,7 @@ class RandomFlip(Preprocess):
 
 
 class ReClass(Preprocess):
-    """Reclasses labels according to given correspondance"""
+    """Reclass labels according to given correspondance"""
 
     def __init__(self, num_classes: int = 19):
 
@@ -183,6 +185,7 @@ class ReClass(Preprocess):
         self,
         y_inputs: tf.Tensor,
     ) -> Tuple[tf.Tensor, tf.Tensor]:
+        """Change the one hot labels"""
 
         _y = tf.argmax(y_inputs, axis=-1)
 
@@ -196,7 +199,7 @@ class ReClass(Preprocess):
 
 
 class Resize(Preprocess):
-    """Resizes both input"""
+    """Resize both inputs"""
 
     def __init__(self, intermediate_size: Tuple[int] = (240, 320)):
 
@@ -205,6 +208,7 @@ class Resize(Preprocess):
     def resize(
         self, x_inputs: tf.Tensor, y_inputs: tf.Tensor, intermediate_size: Tuple[int]
     ) -> Tuple[tf.Tensor]:
+        """Resize input"""
 
         x_inputs = tf.image.resize(x_inputs, intermediate_size)
         y_inputs = tf.image.resize(y_inputs, intermediate_size, "nearest")
@@ -213,7 +217,7 @@ class Resize(Preprocess):
 
 
 def one_crop_random(input: tf.Tensor, size: int) -> tf.Tensor:
-    """Crops an input with a random upper left corner"""
+    """Crop an input with a random upper left corner"""
     h, w, c = input.shape
 
     target_height = max(h, size)
@@ -236,7 +240,7 @@ def one_crop_random(input: tf.Tensor, size: int) -> tf.Tensor:
 
 
 def one_random_flip(input: tf.Tensor) -> tf.Tensor:
-    """Randomly flips the input"""
+    """Randomly flip the input"""
     if tf.random.uniform(shape=()) > 0.5:
         input = tf.image.flip_left_right(input)
 
