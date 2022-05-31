@@ -25,7 +25,7 @@ Available flags are:
 ```bash
 examples/dataset_metrics.py:
   --dataset_y_path: Dataset images
-    (default: '/media/raffaelbdl/T7/BDD100K/bdd100k/day/labels/')
+    (default: './BDD100K/bdd100k/day/labels/')
 ```
 
 
