@@ -4,6 +4,8 @@ Project that aims at improving semantic segmentation on driving images at night-
 ## Segmentation
 ### Installation
 
+Start by installing all the requirements :
+
 ```bash
 git clone git@github.com:tboulet/Improved-Semantic-Segmentation-for-Night-Drive.git
 cd Improved-Semantic-Segmentation-for-Night-Drive
@@ -11,17 +13,68 @@ cd Improved-Semantic-Segmentation-for-Night-Drive
 pip install -r requirements.txt
 ```
 
-### Train segmentation
+### Get dataset metrics
 
-All tasks can be performed from main_segmentation.py.
-
-To start a training run, please change the directory paths in `./main_segmentation.py`, then in bash:
+To compute the metrics of a dataset, please run this command:
 
 ```bash
-python main_segmentation.py --model_name <unetmobilenetv2|deeplabv3> --dataset <day_only|night_only|both>
+python examples/dataset_metrics.py
 ```
 
-You can vizualize the inference results in `./results`.
+Available flags are:
+```bash
+examples/dataset_metrics.py:
+  --dataset_y_path: Dataset images
+    (default: '/media/raffaelbdl/T7/BDD100K/bdd100k/day/labels/')
+```
+
+
+### Train segmentation
+
+To start a training run, please run this command:
+
+```bash
+python examples/train_segmentation.py
+```
+
+Available flags are :
+```bash
+examples/train_segmentation.py:
+  --batch_size: Size of the batches
+    (default: '10')
+    (an integer)
+  --dataset_x_path: Dataset images
+    (default: './BDD100K/bdd100k/day/images/')
+  --dataset_y_path: Dataset images
+    (default: './BDD100K/bdd100k/day/labels/')
+  --gamma_factor: Arg for gamma process
+    (default: '0.5')
+    (a number)
+  --image_process: Image process for image augmentation
+    (default: 'none')
+  --image_size: Size of the square input for cropping
+    (default: '224')
+    (an integer)
+  --intermediate_size: Size before cropping;
+    repeat this option to specify a list of values
+    (default: '[225, 400]')
+    (an integer)
+  --learning_rate: Learning rate
+    (default: '0.0005')
+    (a number)
+  --log_factor: Arg for log process
+    (default: '0.5')
+    (a number)
+  --model_name: Available models : [unetmobilenetv2, deeplabv3, unetmobilenetv2_big]
+    (default: 'unetmobilenetv2')
+  --n_epochs: Number of epochs
+    (default: '50')
+    (an integer)
+  --noise_factor: Noise factor for image augmentation
+    (default: '0.01')
+    (a number)
+```
+
 
 ## ForkGAN
 ForkGAN is an improved version of CycleGAN able of generating a night-time dataset.
