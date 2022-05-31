@@ -1,4 +1,4 @@
-import functools
+from functools import partial
 import os
 import random
 from typing import List, Optional, Tuple, TYPE_CHECKING
@@ -176,7 +176,7 @@ class Training:
         elif loss == "mse":
             self.loss = MeanSquaredError()
         elif loss == "wcce":
-            self.loss = functools.partial(
+            self.loss = partial(
                 softmax_weighted_cce, weights=[1.0, 2.0, 10.0, 13.0, 5.0]
             )
         else:
@@ -301,7 +301,7 @@ def load_batch(
     sorted_x_dir: List[str],
     sorted_y_dir: List[str],
 ) -> Tuple[tf.Tensor, tf.Tensor]:
-    """Loads a batch of images from disk"""
+    """Load a batch of images from disk"""
     xs = []
     ys = []
 
@@ -321,7 +321,7 @@ def load_batch(
 def full_prediction(
     input: tf.Tensor, config: dict, model: Model, preprocess: List["Preprocess"]
 ):
-    """no batch"""
+    """Make predction for a single image"""
     x = np.expand_dims(input, axis=0) / 255.0
     y = np.ones((x.shape[:-1]))
     y = tf.one_hot(y, config["num_classes"], axis=-1, dtype=tf.float32)
