@@ -14,7 +14,7 @@ class Callback:
     """Base class for all callbacks
 
     Methods:
-        __call__: Applies callback
+        __call__: Apply callback
     """
 
     def __init__(self) -> None:
@@ -36,7 +36,7 @@ class WandbCallback(Callback):
 
 
 class InferOnImage(Callback):
-    """Infers prediction on a list of images"""
+    """Infer prediction on a list of images"""
 
     def __init__(
         self,
