@@ -1,9 +1,10 @@
+wandb
 tensorflow==2.8.0
 tf_clahe
 tensorflow-addons
 numpy
 Pillow
-wandb
 matplotlib
 tqdm
 tensorflow_addons
+gradio

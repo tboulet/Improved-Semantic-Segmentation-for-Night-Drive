@@ -1,7 +1,7 @@
 # Improved-Semantic-Segmentation-for-Night-Drive
 Project that aims at improving semantic segmentation on driving images at night-time, using GAN and lightning correction methods.
 
-## Getting started
+## Segmentation
 ### Installation
 
 ```bash
@@ -57,3 +57,15 @@ The Fréchet inception distance of a dataset can be calculated using the script 
     `python improved_nightdrive/fid/fid_metric.py` "chemin vers le dataset"
     
 The results are stored in the `ForkGAN/datasets/BDD100K/fid_logs` folder.
+
+## Lighting
+
+We provide the users with a *gradio* interface to make it easier to experiment with the lighting process.
+
+In order to start the app, please run in bash:
+
+```bash
+python -m improved_nightdrive.app
+``` 
+
+Then click on the localhost link given in the terminal, it will redirect you to an interface on your default browser.
