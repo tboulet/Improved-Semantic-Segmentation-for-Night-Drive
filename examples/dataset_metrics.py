@@ -8,7 +8,7 @@ from improved_nightdrive.segmentation.analyse_dataset import class_proportion
 
 flags.DEFINE_string(
     "dataset_y_path",
-    "/media/raffaelbdl/T7/BDD100K/bdd100k/day/labels/",
+    "/BDD100K/bdd100k/day/labels/",
     "Dataset images",
 )
 FLAGS = flags.FLAGS
