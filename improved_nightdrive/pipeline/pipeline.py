@@ -343,6 +343,6 @@ def full_prediction(
     preds = model.predict(xs)
 
     pred = tf.concat(
-        [preds[0], preds[1][:, : x.shape[2] - config["image_size"]]], axis=1
+        [preds[0], preds[1][:, config["image_size"] - x.shape[2] :]], axis=1
     )
     return pred, x[0, : config["image_size"]]
