@@ -11,7 +11,7 @@ class Metric:
         func: f(y, ypred) -> m
 
     Methods:
-        __call__: Evaluates the metric
+        __call__: Evaluate the metric
     """
 
     def __init__(self, func, name="metric") -> None:
@@ -44,7 +44,7 @@ def mean_iou(
     predictions: tf.Tensor,
     num_classes: int,
 ) -> float:
-    """Computes the mean IOU for a batch
+    """Compute the mean IOU for a batch
 
     Args:
         labels (tf.Tensor): The segmentation map label,
@@ -76,7 +76,7 @@ def class_mean_iou(
     predictions: tf.Tensor,
     num_classes: int,
 ) -> List[float]:
-    """Computes the mean IOU for a batch for each class
+    """Compute the mean IOU for a batch for each class
 
     Args:
         labels (tf.Tensor): The segmentation map label,
