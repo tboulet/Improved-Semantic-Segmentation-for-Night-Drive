@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import yaml
 
-from improved_nightdrive.pipeline.metric import ClassMeanIOU, MeanIOU
+from improved_nightdrive.pipeline.metric import ClassMeanIOU, ConfMatrix, MeanIOU
 from improved_nightdrive.pipeline.pipeline import Evaluation
 from improved_nightdrive.pipeline.preprocess import (
     Resize,
@@ -58,7 +58,7 @@ def main(_):
     x_dir_path = FLAGS.dataset_x_path
     y_dir_path = FLAGS.dataset_y_path
 
-    metrics = [ClassMeanIOU(new_classes), MeanIOU(new_classes)]
+    metrics = [ClassMeanIOU(new_classes), MeanIOU(new_classes), ConfMatrix(new_classes)]
     preprocesses = [
         Resize(default_config["intermediate_size"]),
         ReClass(),
@@ -84,6 +84,9 @@ def main(_):
         res_str += " "
         res_str += f"{p:.2f} | "
     print("\n", res_str, "\n")
+
+    plt.matshow(m[2])
+    plt.show()
 
 
 if __name__ == "__main__":

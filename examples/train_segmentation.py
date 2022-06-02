@@ -8,7 +8,7 @@ sys.path.insert(1, os.path.abspath(os.path.curdir))
 
 import numpy as np
 
-from improved_nightdrive.pipeline.metric import MeanIOU
+from improved_nightdrive.pipeline.metric import ConfMatrix, MeanIOU
 from improved_nightdrive.pipeline.pipeline import Training
 from improved_nightdrive.pipeline.preprocess import (
     AddNoise,
@@ -83,6 +83,7 @@ def main(_):
             if config["new_classes"] > 0
             else config["num_classes"]
         ),
+        ConfMatrix(config["new_classes"]),
     ]
 
     preprocesses = [
