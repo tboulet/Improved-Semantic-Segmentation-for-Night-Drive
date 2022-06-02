@@ -2,6 +2,9 @@ from typing import List
 
 import gradio as gr
 import numpy as np
+import tensorflow as tf
+
+tf.get_logger().setLevel("ERROR")
 
 from improved_nightdrive.pipeline.lighting import (
     apply_gamma_map,
@@ -42,20 +45,17 @@ def lighting_gradio(
         blur_bool[blur] = True
 
     model = make_model(config)
-    if model_name == "Best night-only unetmobilenetv2":
-        model.load_weights(
-            "./results/best_unet_night/models/_at_best_vmiou"
-        ).expect_partial()
+    if model_name == "Nuit unetmobilenetv2":
+        model.load_weights("./results/unet_night_gamma_75_75_25.h5")
         process = [GammaProcess(p=[0.75, 0.75, 0.25])]
-    elif model_name == "Best night-only deeplabv3":
-        model.load_weights(
-            "./results/best_deeplab_night/models/_at_best_vmiou"
-        ).expect_partial()
+    elif model_name == "Nuit deeplabv3":
+        model.load_weights("./results/deeplab_night_gamma_75_25_50.h5")
         process = [GammaProcess(p=[0.75, 0.25, 0.5])]
-    elif model_name == "Best both unetmobilenetv2":
-        model.load_weights(
-            "./results/best_unet_both/models/_at_best_vmiou"
-        ).expect_partial()
+    elif model_name == "Jour&Nuit unetmobilenetv2":
+        model.load_weights("./results/weighted_unet_both_none.h5")
+        process = []
+    elif model_name == "ForkGAN unetmobilenetv2":
+        model.load_weights("./results/unet_forkgan.h5")
         process = []
     else:
         raise ValueError(f"{model_name} is unknown !")
@@ -90,9 +90,10 @@ def launch_app():
             gr.CheckboxGroup(["Blur before", "Blur after"]),
             gr.Radio(
                 [
-                    "Best night-only deeplabv3",
-                    "Best night-only unetmobilenetv2",
-                    "Best both unetmobilenetv2",
+                    "Nuit deeplabv3",
+                    "Nuit unetmobilenetv2",
+                    "Jour&Nuit unetmobilenetv2",
+                    "ForkGAN unetmobilenetv2",
                 ]
             ),
         ],
