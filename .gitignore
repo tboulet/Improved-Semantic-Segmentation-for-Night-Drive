@@ -7,6 +7,7 @@ datasets
 Processed_datasets
 check
 flagged
+results/legacy/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
