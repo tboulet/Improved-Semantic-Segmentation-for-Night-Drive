@@ -86,6 +86,7 @@ def main(_):
     print("\n", res_str, "\n")
 
     plt.matshow(m[2])
+    plt.colorbar()
     plt.show()
 
 
