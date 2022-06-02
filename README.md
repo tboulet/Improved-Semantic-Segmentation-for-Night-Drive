@@ -1,9 +1,12 @@
-# Improved-Semantic-Segmentation-for-Night-Drive
-Project that aims at improving semantic segmentation on driving images at night-time, using GAN and lightning correction methods.
+# Improved Semantic Segmentation for Night Drive
+This project aims at improving semantic segmentation on driving images at night-time, using GAN and lightning correction methods.
+It was done in the frame of a semester project at CentraleSupélec, and was proposed by a team from Valeo, a french automotive supplier.
 
-## Segmentation
-### Installation
+The members of this project are Raffael Bolla Di Lorenzo, Timothé Boulet, Alexandre Herment, Thibault Le Sellier de Chezelles et Hédi Razgallah.
 
+This project is contained in the package `improved_nightdrive`, from which every functionalities can be called by following the procedure below.
+
+## Installation
 Start by installing all the requirements :
 
 ```bash
@@ -12,6 +15,9 @@ cd Improved-Semantic-Segmentation-for-Night-Drive
 
 pip install -r requirements.txt
 ```
+
+## Segmentation
+A few examples are given in order to make the use of the code easier.
 
 ### Get dataset metrics
 
@@ -27,6 +33,8 @@ examples/dataset_metrics.py:
   --dataset_y_path: Dataset images
     (default: './BDD100K/bdd100k/day/labels/')
 ```
+
+As of now, the metrics are the proportion of classes per pixel.
 
 
 ### Train segmentation
@@ -75,6 +83,38 @@ examples/train_segmentation.py:
     (a number)
 ```
 
+### Evaluate a model on a dataset
+
+To evaluate a model, please run this command:
+
+```bash
+python examples/eval_segmentation.py
+```
+
+Available flags are :
+```bash
+examples/eval_segmentation.py:
+  --batch_size: Size of the batches
+    (default: '10')
+    (an integer)
+  --dataset_x_path: Dataset images
+    (default: './BDD100K/bdd100k/day/images/')
+  --dataset_y_path: Dataset images
+    (default: './BDD100K/bdd100k/day/labels/')
+  --image_process: Image process for image augmentation
+    (default: 'none')
+  --image_size: Size of the square input for cropping
+    (default: '224')
+    (an integer)
+  --intermediate_size: Size before cropping;
+    repeat this option to specify a list of values
+    (default: '[225, 400]')
+    (an integer)
+  --model_name: Available models : [unetmobilenetv2, deeplabv3, unetmobilenetv2_big]
+    (default: 'unetmobilenetv2')
+  --model_weights: Weights of the model
+    (default: './results/unet_night_none.h5')
+```
 
 ## ForkGAN
 ForkGAN is an improved version of CycleGAN able of generating a night-time dataset.
@@ -104,8 +144,7 @@ A night-time dataset can be created by launching the script `scripts/bdd_process
 
 A small-sized dataset can be created by launching the script `scripts/bdd_process_train.sh` from the `ForkGAN/` folder. He will then be saved in the `Processed_datasets/testA` folder.
 
-### Calculation of the metrics
-#### FID of a created dataset
+## Compute the FID of a dataset
 The Fréchet inception distance of a dataset can be calculated using the script `fid_metric.py`:
     `python improved_nightdrive/fid/fid_metric.py` "chemin vers le dataset"
     
@@ -115,7 +154,7 @@ The results are stored in the `ForkGAN/datasets/BDD100K/fid_logs` folder.
 
 We provide the users with a *gradio* interface to make it easier to experiment with the lighting process.
 
-In order to start the app, please run in bash:
+In order to start the app, please run this command:
 
 ```bash
 python -m improved_nightdrive.app
