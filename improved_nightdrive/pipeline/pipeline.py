@@ -52,6 +52,7 @@ class Evaluation:
         metrics: List["Metric"] = [],
         preprocesses: Optional[List["Preprocess"]] = [],
         batch_size=16,
+        config: Optional[dict] = None,
     ) -> None:
 
         assert len(metrics) > 0, "Metrics must be specified"
@@ -78,6 +79,8 @@ class Evaluation:
         self.x_dir_path = x_dir_path
         self.y_dir_path = y_dir_path
 
+        self.config = config
+
     def sample_evaluate(self, x: tf.Tensor, y: tf.Tensor) -> List[float]:
         """Evaluates the model one one sample
 
@@ -95,7 +98,14 @@ class Evaluation:
         for preprocess in self.preprocesses:
             x, y = preprocess.func(x, y)
 
-        ypred = self.model(x)
+        y = y[:, : self.config["image_size"]]
+
+        ypred = tf.map_fn(
+            partial(
+                _full_prediction, config=self.config, model=self.model, preprocess=[]
+            ),
+            x,
+        )
 
         evaluated_metrics = []
         for metric in self.metrics:
@@ -110,7 +120,6 @@ class Evaluation:
         num_elem = len(sorted_x_dir)
 
         idx = list(range(num_elem))
-        random.shuffle(idx)
 
         num_batch = len(idx) // self.batch_size
         for i in tqdm(range(num_batch), desc="Evaluation"):
@@ -123,7 +132,7 @@ class Evaluation:
                 sorted_x_dir,
                 sorted_y_dir,
             )
-            sample_metrics = self.sample_evaluate(train_xbatch, train_ybatch)
+            sample_metrics = self.sample_evaluate(train_xbatch * 255.0, train_ybatch)
             for j in range(len(dataset_metrics)):
                 dataset_metrics[j] += sample_metrics[j] / num_batch
 
@@ -216,6 +225,8 @@ class Training:
             # Train
             random.shuffle(train_idx)
             num_batch = len(train_idx) // batch_size
+            t_loss = []
+            t_metrics = {}
             for i in tqdm(range(num_batch), desc="Inner training loop"):
                 idx_batch = train_idx[i * batch_size : (i + 1) * batch_size]
                 train_xbatch, train_ybatch = load_batch(
@@ -245,9 +256,16 @@ class Training:
                 grads = tape.gradient(train_loss, self.model.trainable_weights)
                 opt.apply_gradients(zip(grads, self.model.trainable_weights))
 
-            logs["train_loss"] = train_loss.numpy()
+                t_loss.append(train_loss)
+                for metric in self.metrics:
+                    try:
+                        t_metrics[metric.name].append(metric(train_ybatch, train_ypred))
+                    except KeyError:
+                        t_metrics[metric.name] = [metric(train_ybatch, train_ypred)]
+
+            logs["train_loss"] = np.mean(t_loss)
             for metric in self.metrics:
-                logs["train_" + metric.name] = metric(train_ybatch, train_ypred)
+                logs["train_" + metric.name] = np.mean(t_metrics[metric.name], axis=0)
 
             if logs["train_miou"] > logs["max_train_miou"]:
                 logs["max_train_miou"] = float(logs["train_miou"])
@@ -255,6 +273,8 @@ class Training:
             # Valid
             random.shuffle(valid_idx)
             num_batch = len(valid_idx) // batch_size
+            v_loss = []
+            v_metrics = {}
             for i in range(num_batch):
                 idx_batch = valid_idx[i * batch_size : (i + 1) * batch_size]
                 valid_xbatch, valid_ybatch = load_batch(
@@ -279,14 +299,21 @@ class Training:
                 _ypred = tf.reshape(valid_ypred, shape=(-1, valid_ypred.shape[-1]))
                 valid_loss = self.loss(_y, _ypred)
 
-            logs["valid_loss"] = valid_loss.numpy()
+                v_loss.append(valid_loss)
+                for metric in self.metrics:
+                    try:
+                        v_metrics[metric.name].append(metric(valid_ybatch, valid_ypred))
+                    except KeyError:
+                        v_metrics[metric.name] = [metric(valid_ybatch, valid_ypred)]
+
+            logs["valid_loss"] = np.mean(v_loss)
             for metric in self.metrics:
-                logs["valid_" + metric.name] = metric(valid_ybatch, valid_ypred)
+                logs["valid_" + metric.name] = np.mean(v_metrics[metric.name], axis=0)
 
             if logs["valid_miou"] > logs["max_valid_miou"]:
                 logs["max_valid_miou"] = float(logs["valid_miou"])
                 if save_model_bool:
-                    save_model(self.model, save_name + f"_at_best_vmiou")
+                    save_model(self.model, save_name + ".h5")
 
             for callback in self.callbacks:
                 callback.at_epoch_end(logs=logs, model=self.model, epoch=epoch)
@@ -322,8 +349,9 @@ def full_prediction(
     input: tf.Tensor, config: dict, model: Model, preprocess: List["Preprocess"]
 ):
     """Make predction for a single image"""
-    x = np.expand_dims(input, axis=0) / 255.0
-    y = np.ones((x.shape[:-1]))
+    x = tf.cast(input, dtype=tf.float32)
+    x = tf.expand_dims(x, axis=0) / 255.0
+    y = tf.ones((x.shape[:-1]), dtype=tf.int32)
     y = tf.one_hot(y, config["num_classes"], axis=-1, dtype=tf.float32)
 
     x, y = Resize(config["intermediate_size"]).func(x, y)
@@ -346,3 +374,9 @@ def full_prediction(
         [preds[0], preds[1][:, config["image_size"] - x.shape[2] :]], axis=1
     )
     return pred, x[0, : config["image_size"]]
+
+
+def _full_prediction(
+    input: tf.Tensor, config: dict, model: Model, preprocess: List["Preprocess"]
+):
+    return full_prediction(input, config, model, preprocess)[0]

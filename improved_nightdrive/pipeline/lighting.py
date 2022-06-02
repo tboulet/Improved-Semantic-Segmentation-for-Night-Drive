@@ -36,8 +36,8 @@ def apply_gamma_map(
     input: tf.Tensor,
     mask: tf.Tensor,
     mask_indice: int,
-    max_gamma: float = 0.5,
-    min_gamma: float = 0.1,
+    max_gamma: float = 1,
+    min_gamma: float = 0.0,
 ):
     """Apply gamma process to all pixels"""
     gamma_mask = mask * (min_gamma - max_gamma) + max_gamma
