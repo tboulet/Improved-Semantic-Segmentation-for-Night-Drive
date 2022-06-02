@@ -71,9 +71,8 @@ def main(_):
     train_name += "_"
     train_name += str(datetime.now()).replace(" ", "").replace(":", "").replace(".", "")
 
-    if not os.path.isdir(os.path.join("./results/", train_name)):
-        os.makedirs(os.path.join("./results/", train_name, "evolution/"))
-        os.makedirs(os.path.join("./results/", train_name, "models/"))
+    if not os.path.isdir("./results/"):
+        os.mkdir("./results/")
 
     model = make_model(config)
     model.summary()
@@ -87,11 +86,11 @@ def main(_):
     ]
 
     preprocesses = [
-        AddNoise(config["noise_factor"]),
         Resize(config["intermediate_size"]),
         RandomCrop(config["image_size"]),
         RandomFlip(),
         ReClass(),
+        AddNoise(config["noise_factor"]),
     ]
 
     if config["image_process"] == "gamma_process":
@@ -113,7 +112,7 @@ def main(_):
     else:
         pass
 
-    model_save_path = os.path.join("./results/", train_name, "models/")
+    model_save_path = os.path.join("./results/", train_name)
 
     T = Training(
         model=model,
