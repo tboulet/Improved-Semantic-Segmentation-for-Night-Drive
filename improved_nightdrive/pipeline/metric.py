@@ -1,6 +1,7 @@
 from functools import partial
 from typing import List
 
+import numpy as np
 import tensorflow as tf
 
 
@@ -144,6 +145,10 @@ def conf_matrix(
     _labels = tf.reshape(_labels, shape)
     _predictions = tf.reshape(_predictions, shape)
 
+    norm = np.array(
+        [[tf.reduce_sum(tf.where(_labels == i, 1.0, 0.0))] for i in range(num_classes)]
+    )
+
     matrix = (
         tf.math.confusion_matrix(
             _labels,
@@ -152,8 +157,8 @@ def conf_matrix(
             weights=None,
             dtype=tf.dtypes.int32,
             name=None,
-        )
-        / shape
+        ).numpy()
+        / norm
     )
 
-    return matrix.numpy()
+    return matrix
