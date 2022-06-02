@@ -39,6 +39,15 @@ class ClassMeanIOU(Metric):
         )
 
 
+class ConfMatrix(Metric):
+    """Confusion matrix"""
+
+    def __init__(self, num_classes) -> None:
+        super().__init__(
+            name="confmat", func=partial(conf_matrix, num_classes=num_classes)
+        )
+
+
 def mean_iou(
     labels: tf.Tensor,
     predictions: tf.Tensor,
@@ -104,3 +113,47 @@ def class_mean_iou(
     )
 
     return tf.reduce_mean(iou_score, axis=0).numpy()
+
+
+def conf_matrix(
+    labels: tf.Tensor,
+    predictions: tf.Tensor,
+    num_classes: int,
+) -> List[float]:
+    """Computes the confusion matrix for the current batch
+
+    Args:
+        labels (tf.Tensor): The segmentation map label,
+            as tensor of shape [batch_size, height, width, num_classes] (will be flattened along last axis)
+            or as tensor of shape [batch_size, height, width]
+        predictions (tf.Tensor): The segmentation map prediction,
+            as softmax [batch_size, height, width, num_classes] (will be flattened along last axis)
+        num_classes (int): Number of classes
+
+    Returns:
+        confusion matrix (np.ndarray): The confusion matrix
+    """
+    if labels.shape[-1] == num_classes:
+        labels = tf.argmax(labels, axis=-1)
+
+    _labels = tf.cast(labels, dtype=tf.int32)
+    _predictions = tf.argmax(predictions, axis=-1)
+
+    shape = tf.math.reduce_prod(_labels.shape)
+
+    _labels = tf.reshape(_labels, shape)
+    _predictions = tf.reshape(_predictions, shape)
+
+    matrix = (
+        tf.math.confusion_matrix(
+            _labels,
+            _predictions,
+            num_classes=num_classes,
+            weights=None,
+            dtype=tf.dtypes.int32,
+            name=None,
+        )
+        / shape
+    )
+
+    return matrix.numpy()
