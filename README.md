@@ -144,6 +144,11 @@ A night-time dataset can be created by launching the script `scripts/bdd_process
 
 A small-sized dataset can be created by launching the script `scripts/bdd_process_train.sh` from the `ForkGAN/` folder. He will then be saved in the `Processed_datasets/testA` folder.
 
+### Weights and dataset
+The weights and generated datasets are available on this link:
+
+https://drive.google.com/file/d/18nYMU-7Eq6VIy-YQoRmn04OaLVCKwtlx/view?usp=sharing
+
 ## Compute the FID of a dataset
 The Fréchet inception distance of a dataset can be calculated using the script `fid_metric.py`:
     `python improved_nightdrive/fid/fid_metric.py` "chemin vers le dataset"
