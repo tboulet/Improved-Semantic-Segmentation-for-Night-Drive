@@ -4,8 +4,6 @@ import gradio as gr
 import numpy as np
 import tensorflow as tf
 
-tf.get_logger().setLevel("ERROR")
-
 from improved_nightdrive.pipeline.lighting import (
     apply_gamma_map,
     apply_threshold,
@@ -13,6 +11,8 @@ from improved_nightdrive.pipeline.lighting import (
 from improved_nightdrive.pipeline.pipeline import full_prediction
 from improved_nightdrive.pipeline.preprocess import GammaProcess, GaussianBlur
 from improved_nightdrive.segmentation.models import make_model
+
+tf.get_logger().setLevel("ERROR")
 
 
 def lighting_gradio(
