@@ -158,7 +158,7 @@ def conf_matrix(
             dtype=tf.dtypes.int32,
             name=None,
         ).numpy()
-        / norm
+        / (norm + 1e-9)
     )
 
     return matrix
