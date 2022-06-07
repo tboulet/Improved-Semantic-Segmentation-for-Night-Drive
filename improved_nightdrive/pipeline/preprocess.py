@@ -8,6 +8,8 @@ import tensorflow as tf
 from tensorflow_addons.image import equalize, gaussian_filter2d
 import tf_clahe
 
+from improved_nightdrive.pipeline.lighting import apply_gamma_map
+
 
 correspondance = yaml.safe_load(
     open("./improved_nightdrive/pipeline/correspondance.yml", "r")
@@ -84,6 +86,21 @@ class GammaProcess(Preprocess):
         """Apply gamma"""
         func = partial(gamma_process, p=p)
         return tf.map_fn(func, x)
+
+class GammaProcessPerClass(Preprocess):
+    """Apply gamma process per class to first input"""
+
+    def __init__(self, p_class: List[float]) -> None:
+        self.p_class = p_class
+
+        super().__init__(lambda x, y: (self.apply_gamma(x, y, self.p_class), y))
+
+    def apply_gamma(self, x: tf.Tensor, y: tf.Tensor, p_class: List[float]) -> tf.Tensor:
+        """Apply gamma per class"""
+        for i, p in enumerate(p_class):
+            x = apply_gamma_map(x, y, i, 1, p)
+        return x
+
 
 
 class GaussianBlur(Preprocess):
