@@ -19,6 +19,10 @@ pip install -r requirements.txt
 ## Segmentation
 A few examples are given in order to make the use of the code easier.
 
+### Get the dataset
+
+You can download the dataset BDD10K on [Berkeley's Website](https://bdd-data.berkeley.edu/portal.html#download).
+
 ### Get dataset metrics
 
 To compute the metrics of a dataset, please run this command:
