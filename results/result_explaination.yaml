@@ -1,0 +1,69 @@
+deeplab_night_gamma_75_25_50:
+  model: deeplab
+  training data: night
+  preprocess: gamma(75, 25, 50)
+
+deeplab_night_none:
+  model: deeplab
+  training data: night
+  preprocess: none
+
+unet_both_none:
+  model: unet
+  training data: day and night
+  preprocess: none
+
+unet_comogan:
+  model: unet
+  training data: dataset comogan
+  preprocess: none
+
+unet_day_gamma_200:
+  model: unet
+  training data: day
+  preprocess: gamma(200)
+
+unet_day_gamma_300:
+  model: unet
+  training data: day
+  preprocess: gamma(300)
+
+unet_day_gamma_400:
+  model: unet
+  training data: day
+  preprocess: gamma(400)
+
+unet_day_none: 
+  model: unet
+  training data: day
+  preprocess: none
+
+unet_forkgan:
+  model: unet
+  training data: dataset forkgan
+  preprocess: none
+
+unet_night_gamma_50:
+  model: unet
+  training data: night
+  preprocess: gamma(50)
+
+unet_night_gamma_75_75_25:
+  model: unet
+  training data: night
+  preprocess: gamma(75, 25, 25)
+
+unet_night_gamma_75:
+  model: unet
+  training data: night
+  preprocess: gamma(75)
+
+unet_night_none: 
+  model: unet
+  training data: night
+  preprocess: none
+
+weighted_unet_both_none:
+  model: unet with weighted loss
+  training data: day and night
+  preprocess: none
