@@ -123,7 +123,7 @@ examples/eval_segmentation.py:
 ## Generating a dataset
 
 ### Dataset 
-We used the BDD100K dataset available here: [https://bdd-data.berkeley.edu](https://bdd-data.berkeley.edu).
+We used the BDD100K dataset available here: [https://bdd-data.berkeley.edu](https://bdd-data.berkeley.edu) for training the GANs.
 
 ### ForkGAN
 ForkGAN is an improved version of CycleGAN able of generating a night-time dataset. The official implementation can be found here : [https://github.com/zhengziqiang/ForkGAN](https://github.com/zhengziqiang/ForkGAN).
