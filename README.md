@@ -120,12 +120,15 @@ examples/eval_segmentation.py:
     (default: './results/unet_night_none.h5')
 ```
 
-## ForkGAN
-ForkGAN is an improved version of CycleGAN able of generating a night-time dataset.
+## Generating a dataset
 
-### Dataset
+### Dataset 
 We used the BDD100K dataset available here: [https://bdd-data.berkeley.edu](https://bdd-data.berkeley.edu).
 
+### ForkGAN
+ForkGAN is an improved version of CycleGAN able of generating a night-time dataset. The official implementation can be found here : [https://github.com/zhengziqiang/ForkGAN](https://github.com/zhengziqiang/ForkGAN).
+
+To use the ForkGAN
 Here are the paths to install it:
 
 `ForkGAN`
@@ -137,16 +140,19 @@ Here are the paths to install it:
             |testA (images de jour)
             |testB (images de nuit)
 
-### Requirements
+#### Requirements
 The model works on Tensorflow 1. The list of the required modules can be found in the file ForkGAN/requirements.txt.
 
-### Training
+#### Training
 The model can be trained by lauching the script `scripts/bdd_train.sh` from the `ForkGAN/` folder.
 
-### Create a night-time dataset
+#### Create a night-time dataset
 A night-time dataset can be created by launching the script `scripts/bdd_process_train.sh` from the `ForkGAN/` folder. He will then be saved in the `Processed_datasets/trainA` folder.
 
 A small-sized dataset can be created by launching the script `scripts/bdd_process_train.sh` from the `ForkGAN/` folder. He will then be saved in the `Processed_datasets/testA` folder.
+
+### CoMoGAN
+We used the official implementation that can be found here : (https://github.com/cv-rits/CoMoGAN)[https://github.com/cv-rits/CoMoGAN]
 
 ### Weights and dataset
 The weights and generated datasets are available on this link:
