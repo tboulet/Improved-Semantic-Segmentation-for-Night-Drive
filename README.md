@@ -2,7 +2,7 @@
 This project aims at improving semantic segmentation on driving images at night-time, using GAN and lightning correction methods.
 It was done in the frame of a semester project at CentraleSupélec, and was proposed by a team from Valeo, a french automotive supplier.
 
-The members of this project are Raffael Bolla Di Lorenzo, Timothé Boulet, Alexandre Herment, Thibault Le Sellier de Chezelles et Hédi Razgallah.
+The members of this project are Raffael Bolla Di Lorenzo, Timothé Boulet, Alexandre Herment, Thibault Le Sellier de Chezelles and Hédi Razgallah.
 
 This project is contained in the package `improved_nightdrive`, from which every functionalities can be called by following the procedure below.
 
