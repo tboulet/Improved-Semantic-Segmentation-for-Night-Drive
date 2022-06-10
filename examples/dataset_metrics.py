@@ -4,6 +4,8 @@ import sys
 
 sys.path.insert(1, os.path.abspath(os.path.curdir))
 
+import numpy as np
+
 from improved_nightdrive.segmentation.analyse_dataset import class_proportion
 
 flags.DEFINE_string(
@@ -14,8 +16,8 @@ flags.DEFINE_string(
 FLAGS = flags.FLAGS
 
 
-def get_class_proportion(dataset_y_path: str):
-    """Returns proportion for each class"""
+def get_class_proportion(dataset_y_path: str) -> np.ndarray:
+    """Returns and displays proportion for each class"""
     proportions = class_proportion(dataset_y_path, True)
     prop_str = ""
     for (p, n) in zip(

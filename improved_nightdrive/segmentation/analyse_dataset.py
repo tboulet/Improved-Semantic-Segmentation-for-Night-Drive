@@ -7,7 +7,8 @@ from tqdm import tqdm
 from improved_nightdrive.pipeline.preprocess import ReClass
 
 
-def class_proportion(label_path: str, verbose: bool = False):
+def class_proportion(label_path: str, verbose: bool = False) -> np.ndarray:
+    """Gets class proportion of a dataset"""
     reclass = ReClass()
 
     class_count = np.zeros((5,))

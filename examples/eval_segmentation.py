@@ -59,11 +59,13 @@ def main(_):
     y_dir_path = FLAGS.dataset_y_path
 
     metrics = [ClassMeanIOU(new_classes), MeanIOU(new_classes), ConfMatrix(new_classes)]
+    
     preprocesses = [
         Resize(default_config["intermediate_size"]),
         ReClass(),
     ]
-    eva = Evaluation(
+    
+    E = Evaluation(
         model,
         19,
         "cce",
@@ -75,7 +77,8 @@ def main(_):
         config=default_config,
     )
 
-    m = eva.evaluate()
+    m = E.evaluate()
+    
     res_str = f"mIOU : {m[1]}\n"
     for (p, n) in zip(
         m[0], ["Route", "Obstacles", "Panneaux", "Usagers fragiles", "Usagers"]
