@@ -10,9 +10,6 @@ This project is contained in the package `improved_nightdrive`, from which every
 Start by installing all the requirements :
 
 ```bash
-git clone git@github.com:tboulet/Improved-Semantic-Segmentation-for-Night-Drive.git
-cd Improved-Semantic-Segmentation-for-Night-Drive
-
 pip install -r requirements.txt
 ```
 
