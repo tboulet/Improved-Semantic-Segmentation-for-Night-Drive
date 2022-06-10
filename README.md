@@ -173,3 +173,7 @@ python -m improved_nightdrive.app
 ``` 
 
 Then click on the localhost link given in the terminal, it will redirect you to an interface on your default browser.
+
+## Disclaimer
+
+This code was made in the frame of a school project. It has not been extensively tested and may comport contain a few bugs and errors.
