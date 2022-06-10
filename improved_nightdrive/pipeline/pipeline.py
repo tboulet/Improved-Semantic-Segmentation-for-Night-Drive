@@ -82,7 +82,7 @@ class Evaluation:
         self.config = config
 
     def sample_evaluate(self, x: tf.Tensor, y: tf.Tensor) -> List[float]:
-        """Evaluates the model one one sample
+        """Evaluate the model one one sample
 
         Args:
             x_input (tf.Tensor): Input
@@ -203,7 +203,7 @@ class Training:
         save_name: str = "",
         lr: float = 2e-4,
     ) -> None:
-        """Trains the model"""
+        """Train the model"""
         sorted_x_dir = sorted(os.listdir(self.x_dir_path))
         sorted_y_dir = sorted(os.listdir(self.y_dir_path))
         num_elem = len(sorted_x_dir)
@@ -348,7 +348,12 @@ def load_batch(
 def full_prediction(
     input: tf.Tensor, config: dict, model: Model, preprocess: List["Preprocess"]
 ):
-    """Make predction for a single image"""
+    """Make full-sized prediction for a single image
+    
+    Returns:
+        prediction (tf.Tensor): The full-sized prediction
+        process input (tf.Tensor): The input after preprocessing
+    """
     x = tf.cast(input, dtype=tf.float32)
     x = tf.expand_dims(x, axis=0) / 255.0
     y = tf.ones((x.shape[:-1]), dtype=tf.int32)
@@ -379,4 +384,8 @@ def full_prediction(
 def _full_prediction(
     input: tf.Tensor, config: dict, model: Model, preprocess: List["Preprocess"]
 ):
+    """Make full-sized prediction for a single image
+    
+    Returns:
+        prediction (tf.Tensor): The full-sized prediction"""
     return full_prediction(input, config, model, preprocess)[0]

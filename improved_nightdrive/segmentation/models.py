@@ -236,7 +236,7 @@ def DeeplabV3(image_size, num_classes) -> Model:
 
 
 def make_model(config: dict) -> Model:
-    """Gets a model from the run config"""
+    """Get a model from the run config"""
     model_name = config["model_name"]
     image_size = config["image_size"]
     num_classes = config["num_classes"]

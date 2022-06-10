@@ -8,7 +8,7 @@ from improved_nightdrive.pipeline.preprocess import ReClass
 
 
 def class_proportion(label_path: str, verbose: bool = False) -> np.ndarray:
-    """Gets class proportion of a dataset"""
+    """Get class proportion of a dataset"""
     reclass = ReClass()
 
     class_count = np.zeros((5,))

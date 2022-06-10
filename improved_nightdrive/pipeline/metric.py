@@ -132,7 +132,7 @@ def conf_matrix(
         num_classes (int): Number of classes
 
     Returns:
-        confusion matrix (np.ndarray): The confusion matrix
+        confusion_matrix (np.ndarray): The confusion matrix
     """
     if labels.shape[-1] == num_classes:
         labels = tf.argmax(labels, axis=-1)
@@ -149,7 +149,7 @@ def conf_matrix(
         [[tf.reduce_sum(tf.where(_labels == i, 1.0, 0.0))] for i in range(num_classes)]
     )
 
-    matrix = (
+    confusion_matrix = (
         tf.math.confusion_matrix(
             _labels,
             _predictions,
@@ -161,4 +161,4 @@ def conf_matrix(
         / (norm + 1e-9)
     )
 
-    return matrix
+    return confusion_matrix
